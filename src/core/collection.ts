@@ -1,7 +1,7 @@
 /**
- * 精选核心模块
- * 处理精选的创建、列表、更新、删除、添加/移除文档等操作
- * 使用 WebSocket + Yjs 方式存储在工作区的 setting.map.collections 中
+ * Collection core module
+ * Handles collection create, list, update, delete, add/remove documents, and other operations
+ * Stored in workspace setting.map.collections via WebSocket + Yjs
  */
 
 import { getWorkspaceId } from '../utils/config.js';
@@ -16,12 +16,12 @@ import * as Y from 'yjs';
 import { generateId } from '../utils/misc.js';
 
 /**
- * CollectionInfo: 精选类型定义
+ * CollectionInfo: Collection type definition
  *
- * @property id - 精选唯一 ID
- * @property name - 精选名称
- * @property rules - 精选规则（过滤条件）
- * @property allowList - 允许列表中的文档 ID 数组
+ * @property id - Collection unique ID
+ * @property name - Collection name
+ * @property rules - Collection rules (filter conditions)
+ * @property allowList - Array of document IDs in the allow list
  */
 interface CollectionInfo {
 	id: string;
@@ -33,10 +33,10 @@ interface CollectionInfo {
 }
 
 /**
- * normalizeCollection: 规范化精选数据
+ * normalizeCollection: Normalize collection data
  *
- * @param value - 原始值
- * @returns 规范化的 CollectionInfo 或 null
+ * @param value - Raw value
+ * @returns Normalized CollectionInfo or null
  */
 function normalizeCollection(value: unknown): CollectionInfo | null {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -70,10 +70,10 @@ function normalizeCollection(value: unknown): CollectionInfo | null {
 }
 
 /**
- * readCollections: 读取精选列表
+ * readCollections: Read collection list
  *
- * @param array - Y.Array 对象
- * @returns CollectionInfo 数组
+ * @param array - Y.Array object
+ * @returns CollectionInfo array
  */
 function readCollections(array: Y.Array<any>): CollectionInfo[] {
 	const collections: CollectionInfo[] = [];
@@ -87,11 +87,11 @@ function readCollections(array: Y.Array<any>): CollectionInfo[] {
 }
 
 /**
- * findCollectionIndex: 查找精选索引
+ * findCollectionIndex: Find collection index
  *
- * @param array - Y.Array 对象
- * @param id - 精选 ID
- * @returns 索引位置，未找到返回 -1
+ * @param array - Y.Array object
+ * @param id - Collection ID
+ * @returns Index position, or -1 if not found
  */
 function findCollectionIndex(array: Y.Array<any>, id: string): number {
 	for (let i = 0; i < array.length; i++) {
@@ -104,14 +104,14 @@ function findCollectionIndex(array: Y.Array<any>, id: string): number {
 }
 
 /**
- * collectionListHandler: 获取所有精选列表
+ * collectionListHandler: Get all collections
  *
- * 功能描述：
- * - 通过 WebSocket + Yjs 获取工作区的所有精选
- * - 返回按名称排序的精选列表，包含 ID、名称和文档数量
+ * Description:
+ * - Fetches all collections in the workspace via WebSocket + Yjs
+ * - Returns sorted collection list by name, including ID, name, and document count
  *
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 精选数组
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Collection array
  */
 export async function collectionListHandler(params: { workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);
@@ -137,15 +137,15 @@ export async function collectionListHandler(params: { workspace?: string }): Pro
 }
 
 /**
- * collectionInfoHandler: 获取指定精选信息
+ * collectionInfoHandler: Get specified collection info
  *
- * 功能描述：
- * - 获取指定精选的详细信息
- * - 返回精选中的文档列表（包含 ID 和标题）
+ * Description:
+ * - Gets detailed info for the specified collection
+ * - Returns document list in the collection (including ID and title)
  *
- * @param params.id - 精选 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含精选 ID、名称、文档列表和数量的对象
+ * @param params.id - Collection ID (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing collection ID, name, document list, and count
  */
 export async function collectionInfoHandler(params: {
 	id: string;
@@ -164,7 +164,7 @@ export async function collectionInfoHandler(params: {
 		const collection = collections.find((entry) => entry.id === params.id);
 
 		if (!collection) {
-			throw new Error(`精选 ${params.id} 不存在`);
+			throw new Error(`Collection ${params.id} does not exist`);
 		}
 
 		const pagesInfo = await getWorkspaceDocs(workspaceId);
@@ -173,7 +173,7 @@ export async function collectionInfoHandler(params: {
 			const pageInfo = pagesInfo.get(docId);
 			return {
 				id: docId,
-				title: pageInfo?.title || '未命名文档'
+				title: pageInfo?.title || 'Untitled'
 			};
 		});
 
@@ -188,16 +188,16 @@ export async function collectionInfoHandler(params: {
 }
 
 /**
- * collectionCreateHandler: 创建新精选
+ * collectionCreateHandler: Create a new collection
  *
- * 功能描述：
- * - 在工作区中创建新精选
- * - 初始精选为空（allowList 为空数组）
- * - 通过 WebSocket + Yjs 实时创建
+ * Description:
+ * - Creates a new collection in the workspace
+ * - Initial collection is empty (allowList is an empty array)
+ * - Real-time creation via WebSocket + Yjs
  *
- * @param params.name - 精选名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含创建结果的对象
+ * @param params.name - Collection name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing creation result
  */
 export async function collectionCreateHandler(params: {
 	name: string;
@@ -240,16 +240,16 @@ export async function collectionCreateHandler(params: {
 }
 
 /**
- * collectionUpdateHandler: 更新精选名称
+ * collectionUpdateHandler: Update collection name
  *
- * 功能描述：
- * - 更新指定精选的名称
- * - 通过 WebSocket + Yjs 实时更新
+ * Description:
+ * - Updates the name of the specified collection
+ * - Real-time update via WebSocket + Yjs
  *
- * @param params.id - 精选 ID（必需）
- * @param params.name - 新精选名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含更新结果的对象
+ * @param params.id - Collection ID (required)
+ * @param params.name - New collection name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing update result
  */
 export async function collectionUpdateHandler(params: {
 	id: string;
@@ -266,16 +266,16 @@ export async function collectionUpdateHandler(params: {
 		const setting = doc.getMap('setting');
 		const current = setting.get('collections');
 		if (!(current instanceof Y.Array)) {
-			throw new Error('工作区没有精选');
+			throw new Error('Workspace has no collections');
 		}
 		const index = findCollectionIndex(current, params.id);
 		if (index < 0) {
-			throw new Error(`精选 ${params.id} 不存在`);
+			throw new Error(`Collection ${params.id} does not exist`);
 		}
 
 		const previous = normalizeCollection(current.get(index));
 		if (!previous) {
-			throw new Error(`精选 ${params.id} 数据格式错误`);
+			throw new Error(`Collection ${params.id} has invalid data format`);
 		}
 		const next: CollectionInfo = {
 			...previous,
@@ -291,22 +291,22 @@ export async function collectionUpdateHandler(params: {
 
 		return {
 			success: true,
-			message: `精选已重命名为 "${params.name}"`
+			message: `Collection renamed to "${params.name}"`
 		};
 	} finally {
 	}
 }
 
 /**
- * collectionDeleteHandler: 删除精选
+ * collectionDeleteHandler: Delete collection
  *
- * 功能描述：
- * - 删除指定的精选
- * - 不会删除精选中的文档，只删除精选本身
+ * Description:
+ * - Deletes the specified collection
+ * - Does not delete documents in the collection, only the collection itself
  *
- * @param params.id - 精选 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含删除结果的对象
+ * @param params.id - Collection ID (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing deletion result
  */
 export async function collectionDeleteHandler(params: {
 	id: string;
@@ -322,11 +322,11 @@ export async function collectionDeleteHandler(params: {
 		const setting = doc.getMap('setting');
 		const current = setting.get('collections');
 		if (!(current instanceof Y.Array)) {
-			throw new Error('工作区没有精选');
+			throw new Error('Workspace has no collections');
 		}
 		const index = findCollectionIndex(current, params.id);
 		if (index < 0) {
-			throw new Error(`精选 ${params.id} 不存在`);
+			throw new Error(`Collection ${params.id} does not exist`);
 		}
 		current.delete(index, 1);
 
@@ -334,24 +334,24 @@ export async function collectionDeleteHandler(params: {
 
 		return {
 			success: true,
-			message: `精选 ${params.id} 已删除`
+			message: `Collection ${params.id} deleted`
 		};
 	} finally {
 	}
 }
 
 /**
- * collectionAddHandler: 添加文档到精选
+ * collectionAddHandler: Add document to collection
  *
- * 功能描述：
- * - 将指定文档添加到精选
- * - 如果文档已在精选中，不会重复添加
- * - 通过 WebSocket + Yjs 实时更新
+ * Description:
+ * - Adds the specified document to the collection
+ * - If the document is already in the collection, it is not added again
+ * - Real-time update via WebSocket + Yjs
  *
- * @param params.id - 精选 ID（必需）
- * @param params.target - 要添加的文档 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含添加结果的对象
+ * @param params.id - Collection ID (required)
+ * @param params.target - Document ID to add (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing add result
  */
 export async function collectionAddHandler(params: {
 	id: string;
@@ -368,15 +368,15 @@ export async function collectionAddHandler(params: {
 		const setting = doc.getMap('setting');
 		const current = setting.get('collections');
 		if (!(current instanceof Y.Array)) {
-			throw new Error('工作区没有精选');
+			throw new Error('Workspace has no collections');
 		}
 		const index = findCollectionIndex(current, params.id);
 		if (index < 0) {
-			throw new Error(`精选 ${params.id} 不存在`);
+			throw new Error(`Collection ${params.id} does not exist`);
 		}
 		const previous = normalizeCollection(current.get(index));
 		if (!previous) {
-			throw new Error(`精选 ${params.id} 数据格式错误`);
+			throw new Error(`Collection ${params.id} has invalid data format`);
 		}
 		const next: CollectionInfo = {
 			...previous,
@@ -392,23 +392,23 @@ export async function collectionAddHandler(params: {
 
 		return {
 			success: true,
-			message: `文档 ${params.target} 已添加到精选 ${params.id}`
+			message: `Document ${params.target} added to collection ${params.id}`
 		};
 	} finally {
 	}
 }
 
 /**
- * collectionRemoveHandler: 从精选移除文档
+ * collectionRemoveHandler: Remove document from collection
  *
- * 功能描述：
- * - 从指定精选中移除文档
- * - 文档本身不会被删除，只移除与精选的关联
+ * Description:
+ * - Removes the document from the specified collection
+ * - The document itself is not deleted, only its association with the collection
  *
- * @param params.id - 精选 ID（必需）
- * @param params.target - 要移除的文档 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含移除结果的对象
+ * @param params.id - Collection ID (required)
+ * @param params.target - Document ID to remove (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing remove result
  */
 export async function collectionRemoveHandler(params: {
 	id: string;
@@ -425,15 +425,15 @@ export async function collectionRemoveHandler(params: {
 		const setting = doc.getMap('setting');
 		const current = setting.get('collections');
 		if (!(current instanceof Y.Array)) {
-			throw new Error('工作区没有精选');
+			throw new Error('Workspace has no collections');
 		}
 		const index = findCollectionIndex(current, params.id);
 		if (index < 0) {
-			throw new Error(`精选 ${params.id} 不存在`);
+			throw new Error(`Collection ${params.id} does not exist`);
 		}
 		const previous = normalizeCollection(current.get(index));
 		if (!previous) {
-			throw new Error(`精选 ${params.id} 数据格式错误`);
+			throw new Error(`Collection ${params.id} has invalid data format`);
 		}
 		const next: CollectionInfo = {
 			...previous,
@@ -449,7 +449,7 @@ export async function collectionRemoveHandler(params: {
 
 		return {
 			success: true,
-			message: `文档 ${params.target} 已从精选 ${params.id} 移除`
+			message: `Document ${params.target} removed from collection ${params.id}`
 		};
 	} finally {
 	}

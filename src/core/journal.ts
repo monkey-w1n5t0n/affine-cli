@@ -1,13 +1,13 @@
 /**
- * 日记核心模块
- * 处理日记的列表、创建、追加等操作
+ * Journal core module
+ * Handles journal listing, creation, appending, and other operations
  *
- * 功能描述：
- * - 日记本质上是设置了 journal 属性的文档
- * - 属性存储在独立的工作区数据库 db$docProperties 中（SQLite）
- * - journal 属性值格式为 "YYYY-MM-DD"（如 "2024-01-15"）
- * - 通过 WebSocket + Yjs 操作 docProperties 数据库
- * - 使用与 createDocFromMarkdownCore 相同的 markdown 处理方式
+ * Description:
+ * - Journals are essentially documents with the journal property set
+ * - Properties are stored in a separate workspace database db$docProperties (SQLite)
+ * - Journal property value format is "YYYY-MM-DD" (e.g. "2024-01-15")
+ * - Operates on docProperties database via WebSocket + Yjs
+ * - Uses the same markdown processing as createDocFromMarkdownCore
  */
 
 import { getWorkspaceId } from '../utils/config.js';
@@ -29,12 +29,12 @@ import * as Y from 'yjs';
 import * as fs from 'fs';
 
 /**
- * JOURNAL_DATE_FORMAT: 日记日期格式
+ * JOURNAL_DATE_FORMAT: Journal date format
  */
 export const JOURNAL_DATE_FORMAT = 'YYYY-MM-DD';
 
 /**
- * isValidJournalString: 验证是否为有效的日记日期字符串
+ * isValidJournalString: Validate if value is a valid journal date string
  */
 function isValidJournalString(value: unknown): value is string {
 	if (!value || typeof value !== 'string') return false;
@@ -68,12 +68,12 @@ function isValidJournalString(value: unknown): value is string {
 }
 
 /**
- * formatJournalDate: 格式化日期为日记格式（使用本地时区）
+ * formatJournalDate: Format date as journal format (using local timezone)
  */
 function formatJournalDate(date?: string | Date | number): string {
 	/**
-	 * 获取本地日期字符串（YYYY-MM-DD 格式）
-	 * 使用本地时区而非 UTC，确保日记日期与用户当地日期一致
+	 * Get local date string (YYYY-MM-DD format)
+	 * Uses local timezone instead of UTC to ensure journal date matches user's local date
 	 */
 	function getLocalDateString(d: Date): string {
 		const year = d.getFullYear();
@@ -108,14 +108,14 @@ function formatJournalDate(date?: string | Date | number): string {
 }
 
 /**
- * getDocPropertiesDocId: 获取 docProperties 数据库的特殊文档 ID
+ * getDocPropertiesDocId: Get the special document ID for the docProperties database
  */
 function getDocPropertiesDocId(): string {
 	return 'db$docProperties';
 }
 
 /**
- * journalListHandler: 列出工作区所有日记
+ * journalListHandler: List all journals in the workspace
  */
 export async function journalListHandler(params: {
 	workspace?: string;
@@ -199,7 +199,7 @@ export async function journalListHandler(params: {
 }
 
 /**
- * setJournalPropertyInDocProperties: 在 docProperties 数据库中设置 journal 属性
+ * setJournalPropertyInDocProperties: Set journal property in docProperties database
  */
 async function setJournalPropertyInDocProperties(
 	socket: any,
@@ -230,7 +230,7 @@ async function setJournalPropertyInDocProperties(
 }
 
 /**
- * getJournalPropertyFromDocProperties: 从 docProperties 数据库获取 journal 属性
+ * getJournalPropertyFromDocProperties: Get journal property from docProperties database
  */
 async function getJournalPropertyFromDocProperties(
 	socket: any,
@@ -258,7 +258,7 @@ async function getJournalPropertyFromDocProperties(
 }
 
 /**
- * findJournalByDate: 根据日期查找日记
+ * findJournalByDate: Find journal by date
  */
 async function findJournalByDate(
 	socket: any,
@@ -301,7 +301,7 @@ async function findJournalByDate(
 }
 
 /**
- * journalCreateHandler: 创建新日记
+ * journalCreateHandler: Create a new journal
  */
 export async function journalCreateHandler(params: {
 	date?: string;
@@ -326,7 +326,7 @@ export async function journalCreateHandler(params: {
 			return {
 				success: true,
 				exists: true,
-				message: `日期 ${journalDate} 的日记已存在`,
+				message: `Journal for ${journalDate} already exists`,
 				docId: existingJournal.id,
 				title: existingJournal.title,
 				date: journalDate
@@ -350,7 +350,7 @@ export async function journalCreateHandler(params: {
 		return {
 			success: true,
 			exists: false,
-			message: params.icon ? `已创建日记 ${journalDate}，图标: ${params.icon}` : `已创建日记 ${journalDate}`,
+			message: params.icon ? `Journal ${journalDate} created, icon: ${params.icon}` : `Journal ${journalDate} created`,
 			docId: result.docId,
 			title,
 			date: journalDate
@@ -360,8 +360,8 @@ export async function journalCreateHandler(params: {
 }
 
 /**
- * journalAppendHandler: 追加内容到日记
- * 使用与 createDocFromMarkdownCore 相同的 markdown 处理方式
+ * journalAppendHandler: Append content to journal
+ * Uses the same markdown processing as createDocFromMarkdownCore
  */
 export async function journalAppendHandler(params: {
 	id?: string;
@@ -380,7 +380,7 @@ export async function journalAppendHandler(params: {
 	if (!content || !content.trim()) {
 		return {
 			success: true,
-			message: '无内容追加'
+			message: 'No content to append'
 		};
 	}
 
@@ -393,7 +393,7 @@ export async function journalAppendHandler(params: {
 			const journalDate = formatJournalDate(params.date);
 			const journal = await findJournalByDate(socket, workspaceId, journalDate);
 			if (!journal) {
-				throw new Error(`日期 ${journalDate} 的日记不存在，请先创建`);
+				throw new Error(`Journal for ${journalDate} does not exist, please create it first`);
 			}
 			targetDocId = journal.id;
 		}
@@ -404,7 +404,7 @@ export async function journalAppendHandler(params: {
 			prevSV: prevSV
 		} = await fetchYDoc(socket, workspaceId, targetDocId);
 		if (!snapExists) {
-			throw new Error(`文档 ${targetDocId} 不存在`);
+			throw new Error(`Document ${targetDocId} does not exist`);
 		}
 
 		const blocks = doc.getMap('blocks');
@@ -415,17 +415,17 @@ export async function journalAppendHandler(params: {
 		if (operations.length === 0) {
 			return {
 				success: true,
-				message: '无有效内容可追加'
+				message: 'No valid content to append'
 			};
 		}
 
 		const noteId = ensureNoteBlock(blocks);
 		const noteBlock = findBlockById(blocks, noteId);
 		if (!noteBlock) {
-			throw new Error('无法解析 note block');
+			throw new Error('Unable to resolve note block');
 		}
 
-		// 使用与 createDocFromMarkdownCore 相同的处理方式
+		// Uses the same processing as createDocFromMarkdownCore
 		let lastInsertedBlockId: string | undefined;
 		let appendedCount = 0;
 
@@ -434,7 +434,7 @@ export async function journalAppendHandler(params: {
 				? { afterBlockId: lastInsertedBlockId }
 				: { parentId: noteId };
 
-			// strict: false 跳过 URL 验证
+			// strict: false skips URL validation
 			const input = markdownOperationToAppendInput(
 				operation,
 				targetDocId,
@@ -457,7 +457,7 @@ export async function journalAppendHandler(params: {
 				}
 				lastInsertedBlockId = blockId;
 			} catch {
-				// 跳过验证失败的 blocks
+				// Skip blocks that fail validation
 			}
 			appendedCount++;
 		}
@@ -466,7 +466,7 @@ export async function journalAppendHandler(params: {
 
 		return {
 			success: true,
-			message: `已追加 ${appendedCount} 个内容块到日记`,
+			message: `Appended ${appendedCount} content blocks to journal`,
 			docId: targetDocId
 		};
 	} finally {
@@ -474,7 +474,7 @@ export async function journalAppendHandler(params: {
 }
 
 /**
- * journalInfoHandler: 获取日记详情
+ * journalInfoHandler: Get journal details
  */
 export async function journalInfoHandler(params: {
 	id?: string;
@@ -493,7 +493,7 @@ export async function journalInfoHandler(params: {
 			const journalDate = formatJournalDate(params.date);
 			const journal = await findJournalByDate(socket, workspaceId, journalDate);
 			if (!journal) {
-				throw new Error(`日期 ${journalDate} 的日记不存在`);
+				throw new Error(`Journal for ${journalDate} does not exist`);
 			}
 			targetDocId = journal.id;
 		}
@@ -526,7 +526,7 @@ export async function journalInfoHandler(params: {
 
 		const { doc: doc, exists: snapExists } = await fetchYDoc(socket, workspaceId, targetDocId);
 		if (!snapExists) {
-			throw new Error(`文档 ${targetDocId} 不存在`);
+			throw new Error(`Document ${targetDocId} does not exist`);
 		}
 
 		const collected = collectDocForMarkdown(doc);
@@ -550,8 +550,8 @@ export async function journalInfoHandler(params: {
 }
 
 /**
- * journalUpdateHandler: 完整更新日记内容
- * 使用与 createDocFromMarkdownCore 相同的 markdown 处理方式
+ * journalUpdateHandler: Full update of journal content
+ * Uses the same markdown processing as createDocFromMarkdownCore
  */
 export async function journalUpdateHandler(params: {
 	id?: string;
@@ -577,7 +577,7 @@ export async function journalUpdateHandler(params: {
 			const journalDate = formatJournalDate(params.date);
 			const journal = await findJournalByDate(socket, workspaceId, journalDate);
 			if (!journal) {
-				throw new Error(`日期 ${journalDate} 的日记不存在，请先创建`);
+				throw new Error(`Journal for ${journalDate} does not exist, please create it first`);
 			}
 			targetDocId = journal.id;
 		}
@@ -592,7 +592,7 @@ export async function journalUpdateHandler(params: {
 			prevSV
 		} = await fetchYDoc(socket, workspaceId, targetDocId);
 		if (!docExists) {
-			throw new Error(`文档 ${targetDocId} 不存在`);
+			throw new Error(`Document ${targetDocId} does not exist`);
 		}
 
 		const blocks = doc.getMap('blocks');
@@ -606,7 +606,7 @@ export async function journalUpdateHandler(params: {
 		}
 
 		if (!noteBlock) {
-			throw new Error('文档结构异常：找不到 note block');
+			throw new Error('Document structure error: note block not found');
 		}
 
 		const noteChildren = noteBlock.get('sys:children');
@@ -643,7 +643,7 @@ export async function journalUpdateHandler(params: {
 					? { afterBlockId: lastInsertedBlockId }
 					: { parentId: noteId };
 
-				// strict: false 跳过 URL 验证
+				// strict: false skips URL validation
 				const input = markdownOperationToAppendInput(
 					operation,
 					targetDocId,
@@ -666,7 +666,7 @@ export async function journalUpdateHandler(params: {
 					}
 					lastInsertedBlockId = blockId;
 				} catch {
-					// 跳过验证失败的 blocks
+					// Skip blocks that fail validation
 				}
 				appendedCount++;
 			}
@@ -677,8 +677,8 @@ export async function journalUpdateHandler(params: {
 		return {
 			success: true,
 			message: params.icon
-				? `已更新日记 ${targetDocId}，图标: ${params.icon}`
-				: `已更新日记 ${targetDocId}`,
+				? `Journal ${targetDocId} updated, icon: ${params.icon}`
+				: `Journal ${targetDocId} updated`,
 			docId: targetDocId
 		};
 	} finally {

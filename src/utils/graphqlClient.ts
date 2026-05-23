@@ -1,15 +1,15 @@
 /**
- * 模块名称：graphqlClient.ts
- * GraphQL 客户端模块
+ * Module: graphqlClient.ts
+ * GraphQL client module
  *
- * 功能描述：
- * - 提供与 Affine GraphQL API 交互的功能
- * - 支持 Cookie 和 Bearer Token 认证
- * - 处理请求超时和错误
+ * Description:
+ * - Provides functionality for interacting with Affine GraphQL API
+ * - Supports cookie and Bearer token authentication
+ * - Handles request timeout and errors
  *
- * 导出的类和函数：
- * - GraphQLClient: GraphQL 客户端类
- * - createGraphQLClient: 创建 GraphQL 客户端实例
+ * Exported classes and functions:
+ * - GraphQLClient: GraphQL client class
+ * - createGraphQLClient: Create GraphQL client instance
  */
 
 import { fetch } from 'undici';
@@ -19,7 +19,7 @@ import { CLI_VERSION } from './version.js';
 const GRAPHQL_FETCH_TIMEOUT_MS = 30_000;
 
 /**
- * GraphQL 客户端类
+ * GraphQL client class
  */
 export class GraphQLClient {
 	private _headers: Record<string, string>;
@@ -32,7 +32,7 @@ export class GraphQLClient {
 	) {
 		this._headers = { ...(headers || {}) };
 
-		// 设置认证（优先级：Bearer Token > Cookie）
+		// Set authentication (priority: Bearer token > cookie)
 		if (bearer) {
 			this._headers['Authorization'] = `Bearer ${bearer}`;
 			this.authenticated = true;
@@ -41,37 +41,37 @@ export class GraphQLClient {
 		}
 	}
 
-	/** GraphQL 端点 URL */
+	/** GraphQL endpoint URL */
 	get endpoint(): string {
 		return this._endpoint;
 	}
 
-	/** 获取当前请求头 */
+	/** Get current request headers */
 	get headers(): Record<string, string> {
 		return { ...this._headers };
 	}
 
-	/** 获取 Cookie 值 */
+	/** Get cookie value */
 	get cookie(): string {
 		return this._headers['Cookie'] || '';
 	}
 
-	/** 获取 Bearer Token */
+	/** Get Bearer token */
 	get bearer(): string {
 		const auth = this._headers['Authorization'] || '';
 		return auth.startsWith('Bearer ') ? auth.slice(7) : '';
 	}
 
-	/** 检查是否已认证 */
+	/** Check if authenticated */
 	isAuthenticated(): boolean {
 		return this.authenticated;
 	}
 
 	/**
-	 * 执行 GraphQL 请求
-	 * @param query 查询语句
-	 * @param variables 查询变量
-	 * @returns 查询结果
+	 * Execute GraphQL request
+	 * @param query Query string
+	 * @param variables Query variables
+	 * @returns Query result
 	 */
 	async request<T>(query: string, variables?: Record<string, any>): Promise<T> {
 		const headers: Record<string, string> = {
@@ -92,7 +92,7 @@ export class GraphQLClient {
 			});
 		} catch (err: any) {
 			if (err.name === 'AbortError')
-				throw new Error(`请求超时 (${GRAPHQL_FETCH_TIMEOUT_MS / 1000}s)`);
+				throw new Error(`Request timeout (${GRAPHQL_FETCH_TIMEOUT_MS / 1000}s)`);
 			throw err;
 		} finally {
 			clearTimeout(timer);
@@ -104,7 +104,7 @@ export class GraphQLClient {
 				const json = (await res.json()) as any;
 				body = json.errors?.map((e: any) => e.message).join('; ') || JSON.stringify(json);
 			} catch {
-				body = await res.text().catch(() => '(无法读取响应体)');
+				body = await res.text().catch(() => '(unable to read response body)');
 			}
 			throw new Error(`GraphQL HTTP ${res.status}: ${body}`);
 		}
@@ -112,7 +112,7 @@ export class GraphQLClient {
 		const json = (await res.json()) as any;
 		if (json.errors) {
 			const msg = json.errors.map((e: any) => e.message).join('; ');
-			throw new Error(`GraphQL 错误: ${msg}`);
+			throw new Error(`GraphQL error: ${msg}`);
 		}
 		return json.data as T;
 	}
@@ -125,8 +125,8 @@ export function clearGraphQLClientCache() {
 }
 
 /**
- * 创建 GraphQL 客户端实例
- * @returns GraphQL 客户端
+ * Create GraphQL client instance
+ * @returns GraphQL client
  */
 export async function createGraphQLClient(): Promise<GraphQLClient> {
 	if (cachedClient) return cachedClient;
@@ -140,7 +140,7 @@ export async function createGraphQLClient(): Promise<GraphQLClient> {
 
 	if (!gql.isAuthenticated()) {
 		throw new Error(
-			'未配置认证信息。请运行 affine-skill auth login 或设置 AFFINE_API_TOKEN 环境变量'
+			'Authentication not configured. Run affine-skill auth login or set AFFINE_API_TOKEN environment variable'
 		);
 	}
 

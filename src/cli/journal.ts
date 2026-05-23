@@ -1,6 +1,6 @@
 /**
- * 日记 CLI 模块
- * 提供日记管理的命令行接口，包括列表、创建、追加等功能
+ * Journal CLI module
+ * Provides command-line interface for journal management, including list, create, append, and more
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -16,11 +16,11 @@ import {
 } from '../core/journal.js';
 
 /**
- * 解析内容参数
- * 支持 --content 直接输入或 @ 开头的文件路径
+ * Parse content parameter
+ * Supports --content for direct input or file paths starting with @
  *
- * @param contentValue - --content 参数值（支持 @filePath 格式）
- * @returns 解析后的内容字符串
+ * @param contentValue - --content parameter value (supports @filePath format)
+ * @returns Parsed content string
  */
 function parseContentParam(contentValue?: string): string {
 	if (!contentValue) {
@@ -36,29 +36,29 @@ function parseContentParam(contentValue?: string): string {
 }
 
 /**
- * 日记命令配置
- * 定义所有日记相关命令的参数和处理器映射
+ * Journal command configuration
+ * Defines parameter and handler mappings for all journal-related commands
  */
 const journalCommands: Record<string, CommandConfig> = {
 	/**
-	 * list 命令：列出工作区所有日记
-	 * 用法：list [--count <n>] [--workspace <workspace-id>]
+	 * list command: list all journals in the workspace
+	 * Usage: list [--count <n>] [--workspace <workspace-id>]
 	 */
 	list: {
 		name: 'list',
-		description: '列出工作区所有日记（支持分页）',
+		description: 'List all journals in the workspace (supports pagination)',
 		usage: 'list [--count <n>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			},
 			{
 				name: 'count',
 				short: 'c',
-				description: '返回结果数量（默认 20）',
+				description: 'Number of results to return (default 20)',
 				type: 'number'
 			}
 		],
@@ -70,36 +70,36 @@ const journalCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * create 命令：创建日记
-	 * 用法：create [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]
+	 * create command: create a journal entry
+	 * Usage: create [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]
 	 */
 	create: {
 		name: 'create',
-		description: '创建新日记（默认创建今天的日记）',
+		description: 'Create a new journal entry (defaults to today)',
 		usage: 'create [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'date',
 				short: 'd',
-				description: '日记日期（默认今天，格式 YYYY-MM-DD）',
+				description: 'Journal date (defaults to today, format YYYY-MM-DD)',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '日记内容（Markdown 格式；以 @ 开头表示文件路径）',
+				description: 'Journal content (Markdown format; prefix with @ for file path)',
 				type: 'string'
 			},
 			{
 				name: 'icon',
 				short: 'I',
-				description: '日记图标（emoji 字符，如 🎯、📝、💡）',
+				description: 'Journal icon (emoji character, e.g. 🎯, 📝, 💡)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -113,36 +113,36 @@ const journalCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * append 命令：追加内容到日记
-	 * 用法：append [--id <doc-id>] [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--workspace <workspace-id>]
+	 * append command: append content to a journal entry
+	 * Usage: append [--id <doc-id>] [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--workspace <workspace-id>]
 	 */
 	append: {
 		name: 'append',
-		description: '在日记末尾追加 Markdown 内容',
+		description: 'Append Markdown content to the end of a journal entry',
 		usage: 'append [--id <doc-id>] [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '日记文档 ID（与 date 参数二选一）',
+				description: 'Journal document ID (use either this or the date parameter)',
 				type: 'string'
 			},
 			{
 				name: 'date',
 				short: 'd',
-				description: '日记日期（默认今天，格式 YYYY-MM-DD，与 id 参数二选一）',
+				description: 'Journal date (defaults to today, format YYYY-MM-DD, use either this or the id parameter)',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '要追加的 Markdown 内容（以 @ 开头表示文件路径）',
+				description: 'Markdown content to append (prefix with @ for file path)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -156,30 +156,30 @@ const journalCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * info 命令：获取日记详情
-	 * 用法：info --id <doc-id> [--workspace <workspace-id>]
+	 * info command: get journal entry details
+	 * Usage: info --id <doc-id> [--workspace <workspace-id>]
 	 */
 	info: {
 		name: 'info',
-		description: '获取日记详情（包含 Markdown 内容）',
+		description: 'Get journal entry details (includes Markdown content)',
 		usage: 'info --id <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '日记文档 ID（与 date 参数二选一）',
+				description: 'Journal document ID (use either this or the date parameter)',
 				type: 'string'
 			},
 			{
 				name: 'date',
 				short: 'd',
-				description: '日记日期（格式 YYYY-MM-DD，与 id 参数二选一）',
+				description: 'Journal date (format YYYY-MM-DD, use either this or the id parameter)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -192,42 +192,42 @@ const journalCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * update 命令：更新日记内容（完整替换）
-	 * 用法：update --id <doc-id> [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]
+	 * update command: update journal entry content (full replacement)
+	 * Usage: update --id <doc-id> [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]
 	 */
 	update: {
 		name: 'update',
-		description: '完整更新日记内容（替换整个文档）',
+		description: 'Fully update journal entry content (replaces entire document)',
 		usage: 'update --id <doc-id> [--date <YYYY-MM-DD>] [--content <markdown|@file>] [--icon <emoji>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '日记文档 ID（与 date 参数二选一）',
+				description: 'Journal document ID (use either this or the date parameter)',
 				type: 'string'
 			},
 			{
 				name: 'date',
 				short: 'd',
-				description: '日记日期（格式 YYYY-MM-DD，与 id 参数二选一）',
+				description: 'Journal date (format YYYY-MM-DD, use either this or the id parameter)',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '新的日记内容（Markdown 格式；以 @ 开头表示文件路径）',
+				description: 'New journal content (Markdown format; prefix with @ for file path)',
 				type: 'string'
 			},
 			{
 				name: 'icon',
 				short: 'I',
-				description: '日记图标（emoji 字符，如 🎯、📝、💡）',
+				description: 'Journal icon (emoji character, e.g. 🎯, 📝, 💡)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -243,7 +243,7 @@ const journalCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 日记 CLI 操作映射
- * 将命令配置转换为命令映射，供 CLI 入口使用
+ * Journal CLI operation mapping
+ * Converts command configuration to command mapping for use by the CLI entry point
  */
 export const runJournalCommands = generateCommandMap(journalCommands);

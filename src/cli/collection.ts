@@ -1,6 +1,6 @@
 /**
- * 收藏夹 CLI 模块
- * 提供收藏夹管理的命令行接口
+ * Collection CLI module
+ * Provides command-line interface for collection management
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -15,27 +15,27 @@ import {
 } from '../core/collection.js';
 
 /**
- * collectionCommands: 收藏夹命令配置
+ * collectionCommands: Collection command configuration
  *
- * 定义了所有收藏夹相关的 CLI 命令：
- * - list: 获取所有收藏夹列表
- * - info: 获取指定收藏夹下的文档列表
- * - create: 创建新收藏夹
- * - update: 更新收藏夹名称
- * - delete: 删除收藏夹
- * - add: 添加文档到收藏夹
- * - remove: 从收藏夹移除文档
+ * Defines all collection-related CLI commands:
+ * - list: Get list of all collections
+ * - info: Get document list under a specified collection
+ * - create: Create a new collection
+ * - update: Update collection name
+ * - delete: Delete a collection
+ * - add: Add a document to a collection
+ * - remove: Remove a document from a collection
  */
 const collectionCommands: Record<string, CommandConfig> = {
 	list: {
 		name: 'list',
-		description: '所有收藏夹列表',
+		description: 'List of all collections',
 		usage: 'list [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -46,20 +46,20 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	info: {
 		name: 'info',
-		description: '指定收藏夹下文档列表',
+		description: 'Document list under a specified collection',
 		usage: 'info --id <collection-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '收藏夹 ID',
+				description: 'Collection ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -71,20 +71,20 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	create: {
 		name: 'create',
-		description: '新建收藏夹',
+		description: 'Create a new collection',
 		usage: 'create --name <name> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'name',
 				short: 'n',
-				description: '收藏夹名称',
+				description: 'Collection name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -96,27 +96,27 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	update: {
 		name: 'update',
-		description: '更新收藏夹',
+		description: 'Update a collection',
 		usage: 'update --id <collection-id> --name <new-name> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '收藏夹 ID',
+				description: 'Collection ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'name',
 				short: 'n',
-				description: '新收藏夹名称',
+				description: 'New collection name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -129,20 +129,20 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	delete: {
 		name: 'delete',
-		description: '删除收藏夹',
+		description: 'Delete a collection',
 		usage: 'delete --id <collection-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '收藏夹 ID',
+				description: 'Collection ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -154,27 +154,27 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	add: {
 		name: 'add',
-		description: '添加文档到收藏夹',
+		description: 'Add a document to a collection',
 		usage: 'add --id <collection-id> --doc <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '收藏夹 ID',
+				description: 'Collection ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'doc',
 				short: 'd',
-				description: '添加的文档 ID',
+				description: 'Document ID to add',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -187,27 +187,27 @@ const collectionCommands: Record<string, CommandConfig> = {
 	},
 	remove: {
 		name: 'remove',
-		description: '从收藏夹移除文档',
+		description: 'Remove a document from a collection',
 		usage: 'remove --id <collection-id> --doc <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '收藏夹 ID',
+				description: 'Collection ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'doc',
 				short: 'd',
-				description: '移除的文档 ID',
+				description: 'Document ID to remove',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -221,6 +221,6 @@ const collectionCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 收藏夹 CLI 操作映射
+ * Collection CLI operation mapping
  */
 export const runCollectionCommands = generateCommandMap(collectionCommands);

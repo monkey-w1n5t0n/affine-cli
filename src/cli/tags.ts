@@ -1,6 +1,6 @@
 /**
- * 标签 CLI 模块
- * 提供标签管理的命令行接口
+ * Tags CLI module
+ * Provides command-line interface for tag management
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -14,26 +14,26 @@ import {
 } from '../core/tags.js';
 
 /**
- * tagsCommands: 标签命令配置
+ * tagsCommands: Tag command configuration
  *
- * 定义了所有标签相关的 CLI 命令：
- * - list: 列出所有标签
- * - create: 创建标签
- * - add: 添加标签到文档
- * - remove: 从文档移除标签
- * - delete: 删除标签
- * - info: 获取指定标签关联的文档列表
+ * Defines all tag-related CLI commands:
+ * - list: List all tags
+ * - create: Create a tag
+ * - add: Add a tag to a document
+ * - remove: Remove a tag from a document
+ * - delete: Delete a tag
+ * - info: Get document list associated with a specified tag
  */
 const tagsCommands: Record<string, CommandConfig> = {
 	list: {
 		name: 'list',
-		description: '列出所有标签',
+		description: 'List all tags',
 		usage: 'list [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -44,26 +44,26 @@ const tagsCommands: Record<string, CommandConfig> = {
 	},
 	create: {
 		name: 'create',
-		description: '创建标签',
+		description: 'Create a tag',
 		usage: 'create --name <name> [--color <color>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'name',
 				short: 'n',
-				description: '标签名称',
+				description: 'Tag name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'color',
 				short: 'c',
-				description: '标签颜色（如 #3B82F6）',
+				description: 'Tag color (e.g. #3B82F6)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -76,27 +76,27 @@ const tagsCommands: Record<string, CommandConfig> = {
 	},
 	add: {
 		name: 'add',
-		description: '添加标签到文档',
+		description: 'Add a tag to a document',
 		usage: 'add -d <doc-id> --tag <tag-name> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'tag',
 				short: 't',
-				description: '标签名称',
+				description: 'Tag name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -109,27 +109,27 @@ const tagsCommands: Record<string, CommandConfig> = {
 	},
 	remove: {
 		name: 'remove',
-		description: '从文档移除标签',
+		description: 'Remove a tag from a document',
 		usage: 'remove -d <doc-id> --tag <tag-name> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'tag',
 				short: 't',
-				description: '标签名称',
+				description: 'Tag name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -142,20 +142,20 @@ const tagsCommands: Record<string, CommandConfig> = {
 	},
 	delete: {
 		name: 'delete',
-		description: '删除标签',
+		description: 'Delete a tag',
 		usage: 'delete --tag <tag-name> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'tag',
 				short: 't',
-				description: '标签名称',
+				description: 'Tag name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -167,26 +167,26 @@ const tagsCommands: Record<string, CommandConfig> = {
 	},
 	info: {
 		name: 'info',
-		description: '获取指定标签关联的文档列表',
+		description: 'Get document list associated with a specified tag',
 		usage: 'info --tag <tag-name> [--workspace <workspace-id>] [--ignore-case]',
 		args: [
 			{
 				name: 'tag',
 				short: 't',
-				description: '标签名称',
+				description: 'Tag name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			},
 			{
 				name: 'ignore-case',
 				short: 'i',
-				description: '忽略大小写',
+				description: 'Case-insensitive matching',
 				type: 'boolean'
 			}
 		],
@@ -200,6 +200,6 @@ const tagsCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 标签 CLI 操作映射
+ * Tags CLI operation mapping
  */
 export const runTagsCommands = generateCommandMap(tagsCommands);

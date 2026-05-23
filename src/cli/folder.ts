@@ -1,6 +1,6 @@
 /**
- * 文件夹 CLI 模块
- * 提供文件夹管理的命令行接口
+ * Folder CLI module
+ * Provides command-line interface for folder management
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -17,29 +17,29 @@ import {
 } from '../core/folder.js';
 
 /**
- * folderCommands: 文件夹命令配置
+ * folderCommands: Folder command configuration
  *
- * 定义了所有文件夹相关的 CLI 命令：
- * - all: 获取所有文件夹列表
- * - list: 获取指定文件夹下的子项列表
- * - create: 创建新文件夹
- * - delete: 删除文件夹
- * - update: 更新文件夹属性
- * - clear: 清除所有空文件夹
- * - add: 将文档添加到文件夹
- * - move: 将文档移动到目标文件夹
- * - remove: 从文件夹移除文档
+ * Defines all folder-related CLI commands:
+ * - all: Get list of all folders
+ * - list: Get items under a specified folder
+ * - create: Create a new folder
+ * - delete: Delete a folder
+ * - update: Update folder properties
+ * - clear: Remove all empty folders
+ * - add: Add a document to a folder
+ * - move: Move a document to a target folder
+ * - remove: Remove a document from a folder
  */
 const folderCommands: Record<string, CommandConfig> = {
 	all: {
 		name: 'all',
-		description: '所有文件夹列表',
+		description: 'List of all folders',
 		usage: 'all [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -50,26 +50,26 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	list: {
 		name: 'list',
-		description: '指定文件夹下文件夹/文档列表',
+		description: 'List of folders/documents under a specified folder',
 		usage: 'list --id <folder-id> [--folder] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文件夹 ID',
+				description: 'Folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'folder',
 				short: 'f',
-				description: '仅返回文件夹列表，不设置默认返回文档列表',
+				description: 'Return only folder list; defaults to returning document list',
 				type: 'boolean'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -82,31 +82,31 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	create: {
 		name: 'create',
-		description: '创建文件夹',
+		description: 'Create a folder',
 		usage: 'create --name <name> [--parent <parent-id>] [--index <idx>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'name',
 				short: 'n',
-				description: '文件夹名称',
+				description: 'Folder name',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'parent',
 				short: 'p',
-				description: '父文件夹 ID',
+				description: 'Parent folder ID',
 				type: 'string'
 			},
 			{
 				name: 'index',
-				description: '排序索引',
+				description: 'Sort index',
 				type: 'number'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -120,20 +120,20 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	delete: {
 		name: 'delete',
-		description: '删除文件夹',
+		description: 'Delete a folder',
 		usage: 'delete --id <folder-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文件夹 ID',
+				description: 'Folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -145,38 +145,38 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	update: {
 		name: 'update',
-		description: '更新文件夹属性（如 name、parentId、index）',
+		description: 'Update folder properties (e.g. name, parentId, index)',
 		usage: 'update --id <folder-id> [--name <name>] [--parent <parent-id>] [--index <idx>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文件夹 ID',
+				description: 'Folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'name',
 				short: 'n',
-				description: '文件夹名称',
+				description: 'Folder name',
 				type: 'string'
 			},
 			{
 				name: 'parent',
 				short: 'p',
-				description: '新的父文件夹 ID（置空设为顶层）',
+				description: 'New parent folder ID (set empty to move to top level)',
 				type: 'string',
 				allowEmpty: true
 			},
 			{
 				name: 'index',
-				description: '排序索引',
+				description: 'Sort index',
 				type: 'number'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -191,13 +191,13 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	clear: {
 		name: 'clear',
-		description: '清除所有空文件夹（没有任何子文件夹或文档关联）',
+		description: 'Remove all empty folders (with no subfolders or associated documents)',
 		usage: 'clear [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -208,32 +208,32 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	add: {
 		name: 'add',
-		description: '文件夹添加文档',
+		description: 'Add a document to a folder',
 		usage: 'add --id <folder-id> --doc <doc-id> [--index <idx>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文件夹 ID',
+				description: 'Folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'doc',
 				short: 'd',
-				description: '添加的文档 ID',
+				description: 'Document ID to add',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'index',
-				description: '排序索引',
+				description: 'Sort index',
 				type: 'number'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -247,27 +247,27 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	move: {
 		name: 'move',
-		description: '将文档从源文件夹移到目标文件夹',
+		description: 'Move a document from source folder to target folder',
 		usage: 'move --id <folder-id> --doc <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '目标文件夹 ID',
+				description: 'Target folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'doc',
 				short: 'd',
-				description: '要移动的文档 ID',
+				description: 'Document ID to move',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -280,27 +280,27 @@ const folderCommands: Record<string, CommandConfig> = {
 	},
 	remove: {
 		name: 'remove',
-		description: '从文件夹移除文档（不是删除文档）',
+		description: 'Remove a document from a folder (does not delete the document)',
 		usage: 'remove --id <folder-id> --doc <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文件夹 ID',
+				description: 'Folder ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'doc',
 				short: 'd',
-				description: '要移除的文档 ID（支持链接 ID 或文档 ID）',
+				description: 'Document ID to remove (supports link ID or document ID)',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -314,6 +314,6 @@ const folderCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 文件夹 CLI 操作映射
+ * Folder CLI operation mapping
  */
 export const runFolderCommands = generateCommandMap(folderCommands);

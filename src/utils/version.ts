@@ -1,10 +1,10 @@
 /**
- * 模块名称：version.ts
- * 版本信息模块
+ * Module: version.ts
+ * Version info module
  *
- * 功能描述：
- * - 从 package.json 导入版本号
- * - 供其他模块使用
+ * Description:
+ * - Imports version number from package.json
+ * - For use by other modules
  */
 
 export const CLI_VERSION = '%%VERSION%%';

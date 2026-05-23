@@ -1,6 +1,6 @@
 /**
- * 评论 CLI 模块
- * 提供评论管理的命令行接口
+ * Comments CLI module
+ * Provides command-line interface for comment management
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -14,50 +14,50 @@ import {
 } from '../core/comments.js';
 
 /**
- * commentsCommands: 评论命令配置
+ * commentsCommands: Comment command configuration
  *
- * 定义了所有评论相关的 CLI 命令：
- * - list: 列出文档评论
- * - create: 创建评论
- * - update: 更新评论内容
- * - delete: 删除评论
- * - resolve: 解决/取消解决评论
+ * Defines all comment-related CLI commands:
+ * - list: List document comments
+ * - create: Create a comment
+ * - update: Update comment content
+ * - delete: Delete a comment
+ * - resolve: Resolve/unresolve a comment
  */
 const commentsCommands: Record<string, CommandConfig> = {
 	list: {
 		name: 'list',
-		description: '列出文档评论',
+		description: 'List document comments',
 		usage: 'list --doc-id <id> [--workspace <workspace-id>] [--first <n>] [--offset <n>] [--full]',
 		args: [
 			{
 				name: 'doc-id',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			},
 			{
 				name: 'first',
 				short: 'n',
-				description: '返回数量',
+				description: 'Number of results',
 				type: 'number'
 			},
 			{
 				name: 'offset',
 				short: 'o',
-				description: '偏移量',
+				description: 'Offset',
 				type: 'number'
 			},
 			{
 				name: 'full',
 				short: 'f',
-				description: '返回完整评论数据',
+				description: 'Return full comment data',
 				type: 'boolean'
 			}
 		],
@@ -73,44 +73,44 @@ const commentsCommands: Record<string, CommandConfig> = {
 	},
 	create: {
 		name: 'create',
-		description: '创建评论',
+		description: 'Create a comment',
 		usage: 'create --doc-id <id> --content <text> [--workspace <workspace-id>] [--selection <text>] [--doc-title <title>] [--doc-mode <mode>]',
 		args: [
 			{
 				name: 'doc-id',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '评论内容',
+				description: 'Comment content',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			},
 			{
 				name: 'selection',
 				short: 's',
-				description: '引用的文本片段（会在文档中搜索并关联）',
+				description: 'Quoted text snippet (will be searched and linked in the document)',
 				type: 'string'
 			},
 			{
 				name: 'doc-title',
-				description: '文档标题',
+				description: 'Document title',
 				type: 'string'
 			},
 			{
 				name: 'doc-mode',
 				short: 'm',
-				description: '文档模式 (page/edgeless)',
+				description: 'Document mode (page/edgeless)',
 				type: 'string'
 			}
 		],
@@ -126,20 +126,20 @@ const commentsCommands: Record<string, CommandConfig> = {
 	},
 	update: {
 		name: 'update',
-		description: '更新评论',
+		description: 'Update a comment',
 		usage: 'update --id <id> --content <text>',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '评论 ID',
+				description: 'Comment ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '新评论内容',
+				description: 'New comment content',
 				required: true,
 				type: 'string'
 			}
@@ -151,26 +151,26 @@ const commentsCommands: Record<string, CommandConfig> = {
 	},
 	delete: {
 		name: 'delete',
-		description: '删除评论（同时移除文档中的关联标记）',
+		description: 'Delete a comment (also removes associated markers in the document)',
 		usage: 'delete --id <id> [--workspace <workspace-id>] [--doc-id <id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '评论 ID',
+				description: 'Comment ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（可选，自动从评论获取）',
+				description: 'Workspace ID (optional, auto-fetched from comment)',
 				type: 'string'
 			},
 			{
 				name: 'doc-id',
 				short: 'd',
-				description: '文档 ID（可选，自动从评论获取）',
+				description: 'Document ID (optional, auto-fetched from comment)',
 				type: 'string'
 			}
 		],
@@ -184,27 +184,27 @@ const commentsCommands: Record<string, CommandConfig> = {
 	},
 	resolve: {
 		name: 'resolve',
-		description: '解决/取消解决评论',
+		description: 'Resolve/unresolve a comment',
 		usage: 'resolve --id <id> --resolved <true|false>',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '评论 ID',
+				description: 'Comment ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'resolved',
 				short: 'r',
-				description: '是否已解决 (true/false)',
+				description: 'Whether resolved (true/false)',
 				required: true,
 				type: 'boolean'
 			}
 		],
 		handler: resolveCommentHandler,
 		paramsMapper: (parsed) => {
-			// 处理布尔值解析：--resolved false 需要正确解析为 false
+			// Handle boolean parsing: --resolved false needs to correctly parse as false
 			const resolved = parsed.resolved === true || String(parsed.resolved) === 'true';
 			return { id: parsed.id, resolved };
 		}
@@ -212,6 +212,6 @@ const commentsCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 评论 CLI 操作映射
+ * Comments CLI operation mapping
  */
 export const runCommentCommands = generateCommandMap(commentsCommands);

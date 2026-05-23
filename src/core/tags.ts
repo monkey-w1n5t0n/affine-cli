@@ -1,7 +1,7 @@
 /**
- * 标签核心模块
- * 处理标签的创建、列表、添加/移除文档等操作
- * 使用 WebSocket + Yjs 方式存储
+ * Tags core module
+ * Handles tag creation, listing, adding/removing documents, etc.
+ * Uses WebSocket + Yjs for storage
  */
 
 import { getWorkspaceId } from '../utils/config.js';
@@ -11,7 +11,7 @@ import * as Y from 'yjs';
 import { generateId } from '../utils/misc.js';
 
 /**
- * 标签选项类型
+ * Tag option type
  */
 export type WorkspaceTagOption = {
 	id: string;
@@ -22,24 +22,24 @@ export type WorkspaceTagOption = {
 };
 
 /**
- * normalizeTag: 规范化标签名称
+ * normalizeTag: Normalize tag name
  *
- * @param tag - 原始标签名称
- * @returns 去除首尾空白后的标签名称
+ * @param tag - Raw tag name
+ * @returns Tag name with leading/trailing whitespace removed
  */
 function normalizeTag(tag: string): string {
 	return tag.trim();
 }
 
 /**
- * getTagOptionsArray: 获取标签选项数组
+ * getTagOptionsArray: Get tag options array
  *
- * 功能描述：
- * - 从 meta 的正确路径 meta.properties.tags.options 获取标签选项数组
- * - 这是 Affine 存储标签选项的标准结构
+ * Description:
+ * - Gets tag options array from the correct path: meta.properties.tags.options
+ * - This is the standard structure Affine uses to store tag options
  *
- * @param meta - 工作区的 meta Y.Map
- * @returns 标签选项数组，若不存在则返回 null
+ * @param meta - Workspace meta Y.Map
+ * @returns Tag options array, or null if not found
  */
 function getTagOptionsArray(meta: Y.Map<any>) {
 	const properties = meta.get('properties');
@@ -55,10 +55,10 @@ function getTagOptionsArray(meta: Y.Map<any>) {
 }
 
 /**
- * parseTagOption: 解析单个标签选项
+ * parseTagOption: Parse a single tag option
  *
- * @param opt - 原始的 Y.Map 对象
- * @returns 解析后的对象，包含 id、value、color；若解析失败返回 null
+ * @param opt - Raw Y.Map object
+ * @returns Parsed object with id, value, color; or null if parsing fails
  */
 function parseTagOption(opt: Y.Map<any>, index: number): WorkspaceTagOption | null {
 	if (opt && opt instanceof Y.Map) {
@@ -79,7 +79,7 @@ function parseTagOption(opt: Y.Map<any>, index: number): WorkspaceTagOption | nu
 }
 
 /**
- * 获取工作区的标签选项
+ * Get workspace tag options
  */
 export function getWorkspaceTagOptions(meta: Y.Map<any>) {
 	const opts = getTagOptionsArray(meta);
@@ -96,14 +96,14 @@ export function getWorkspaceTagOptions(meta: Y.Map<any>) {
 }
 
 /**
- * ensureTagOptionsArray: 确保标签选项数组存在
+ * ensureTagOptionsArray: Ensure tag options array exists
  *
- * 功能描述：
- * - 如果 meta.properties.tags.options 不存在，则创建它
- * - 返回可用的标签选项数组
+ * Description:
+ * - Creates meta.properties.tags.options if it doesn't exist
+ * - Returns the usable tag options array
  *
- * @param meta - 工作区的 meta Y.Map
- * @returns 标签选项 Y.Array
+ * @param meta - Workspace meta Y.Map
+ * @returns Tag options Y.Array
  */
 function ensureTagOptionsArray(meta: Y.Map<any>): Y.Array<any> {
 	let properties = meta.get('properties') as Y.Map<any> | undefined;
@@ -128,10 +128,10 @@ function ensureTagOptionsArray(meta: Y.Map<any>): Y.Array<any> {
 }
 
 /**
- * getWorkspacePageEntries: 获取工作区页面条目列表
+ * getWorkspacePageEntries: Get workspace page entries
  *
- * @param wsMeta - 工作区的 meta Y.Map
- * @returns 页面条目数组，每个包含 id 和 entry（Y.Map）
+ * @param wsMeta - Workspace meta Y.Map
+ * @returns Page entry array, each containing id and entry (Y.Map)
  */
 function getWorkspacePageEntries(wsMeta: Y.Map<any>): Array<{ id: string; entry: Y.Map<any> }> {
 	const pages = wsMeta.get('pages');
@@ -152,10 +152,10 @@ function getWorkspacePageEntries(wsMeta: Y.Map<any>): Array<{ id: string; entry:
 }
 
 /**
- * getStringArray: 从 Y.Array 获取字符串数组
+ * getStringArray: Get string array from Y.Array
  *
- * @param value - Y.Array 或其他值
- * @returns 字符串数组
+ * @param value - Y.Array or other value
+ * @returns String array
  */
 export function getStringArray(value: unknown): string[] {
 	if (!value || !(value instanceof Y.Array)) {
@@ -171,19 +171,19 @@ export function getStringArray(value: unknown): string[] {
 }
 
 /**
- * tagsListHandler: 列出工作区中的所有标签
+ * tagsListHandler: List all tags in the workspace
  *
- * 功能描述：
- * - 通过 WebSocket 获取工作区的所有标签选项
- * - 统计每个标签关联的文档数量
- * - 返回按名称排序的标签列表
+ * Description:
+ * - Gets all tag options in the workspace via WebSocket
+ * - Counts documents associated with each tag
+ * - Returns tag list sorted by name
  *
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含工作区 ID、标签总数和标签列表的对象
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing workspace ID, total tag count, and tag list
  *
- * 注意事项：
- * - 标签列表按名称字母顺序排序
- * - 每个标签包含名称、文档数量和颜色信息
+ * Notes:
+ * - Tag list is sorted alphabetically by name
+ * - Each tag includes name, document count, and color info
  */
 export async function tagsListHandler(params: { workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);
@@ -242,22 +242,22 @@ export async function tagsListHandler(params: { workspace?: string }): Promise<a
 }
 
 /**
- * tagsCreateHandler: 创建新标签
+ * tagsCreateHandler: Create a new tag
  *
- * 功能描述：
- * - 在工作区中创建新标签
- * - 如果标签已存在，返回已存在信息，不重复创建
- * - 自动分配颜色（循环使用预定义颜色）
+ * Description:
+ * - Creates a new tag in the workspace
+ * - If tag already exists, returns existing info without creating duplicate
+ * - Auto-assigns color (cycles through predefined colors)
  *
- * @param params.tag - 标签名称（必需）
- * @param params.color - 标签颜色，如 #3B82F6（可选）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含创建结果的对象
+ * @param params.tag - Tag name (required)
+ * @param params.color - Tag color, e.g. #3B82F6 (optional)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing creation result
  *
- * 注意事项：
- * - 标签名称不区分大小写，比较时忽略大小写
- * - 如果未指定颜色，自动从预定义颜色中循环选择
- * - 创建成功后返回标签的 id、value、color
+ * Notes:
+ * - Tag names are case-insensitive
+ * - If color is not specified, auto-selects from predefined colors
+ * - On success, returns tag id, value, color
  */
 export async function tagsCreateHandler(params: {
 	name: string;
@@ -272,7 +272,7 @@ export async function tagsCreateHandler(params: {
 		await joinWorkspace(socket, workspaceId);
 		const { doc: wsDoc, exists: snapshotExists, prevSV: prevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 		if (!snapshotExists) {
-			throw new Error(`工作区根文档不存在`);
+			throw new Error(`Workspace root document does not exist`);
 		}
 		const meta = wsDoc.getMap('meta');
 
@@ -283,7 +283,7 @@ export async function tagsCreateHandler(params: {
 				workspaceId,
 				name,
 				created: false,
-				message: `标签 "${name}" 已存在`
+				message: `Tag "${name}" already exists`
 			};
 		}
 
@@ -313,21 +313,21 @@ export async function tagsCreateHandler(params: {
 }
 
 /**
- * tagsDocAddHandler: 添加标签到文档
+ * tagsDocAddHandler: Add tag to document
  *
- * 功能描述：
- * - 将指定标签添加到文档
- * - 如果标签不存在，自动创建该标签
- * - 如果文档已有该标签，不重复添加
+ * Description:
+ * - Adds specified tag to document
+ * - If tag doesn't exist, auto-creates it
+ * - If document already has the tag, doesn't add duplicate
  *
- * @param params.id - 文档 ID（必需）
- * @param params.tag - 标签名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含操作结果的对象
+ * @param params.id - Document ID (required)
+ * @param params.tag - Tag name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing operation result
  *
- * 注意事项：
- * - 标签名称不区分大小写
- * - 如果标签不存在会自动创建，颜色自动分配
+ * Notes:
+ * - Tag names are case-insensitive
+ * - If tag doesn't exist it will be auto-created with auto-assigned color
  */
 export async function tagsDocAddHandler(params: {
 	id: string;
@@ -343,14 +343,14 @@ export async function tagsDocAddHandler(params: {
 
 		const { doc: wsDoc, exists: wsSnapshotExists, prevSV: wsPrevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 		if (!wsSnapshotExists) {
-			throw new Error(`工作区根文档不存在`);
+			throw new Error(`Workspace root document does not exist`);
 		}
 		const wsMeta = wsDoc.getMap('meta');
 
 		const pages = getWorkspacePageEntries(wsMeta);
 		const page = pages.find((entry) => entry.id === params.id);
 		if (!page) {
-			throw new Error(`文档 ${params.id} 不存在于工作区`);
+			throw new Error(`Document ${params.id} does not exist in workspace`);
 		}
 
 		const existingOptions = getWorkspaceTagOptions(wsMeta);
@@ -388,27 +388,27 @@ export async function tagsDocAddHandler(params: {
 
 		return {
 			success: true,
-			message: `标签 "${tag}" 已添加到文档 ${params.id}`
+			message: `Tag "${tag}" added to document ${params.id}`
 		};
 	} finally {
 	}
 }
 
 /**
- * tagsDocRemoveHandler: 从文档移除标签
+ * tagsDocRemoveHandler: Remove tag from document
  *
- * 功能描述：
- * - 从指定文档中移除标签
- * - 标签本身不会被删除，只移除与文档的关联
+ * Description:
+ * - Removes specified tag from document
+ * - The tag itself is not deleted, only the association with the document
  *
- * @param params.id - 文档 ID（必需）
- * @param params.tag - 标签名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含操作结果的对象
+ * @param params.id - Document ID (required)
+ * @param params.tag - Tag name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing operation result
  *
- * 注意事项：
- * - 标签名称不区分大小写
- * - 如果标签或文档不存在，抛出异常
+ * Notes:
+ * - Tag names are case-insensitive
+ * - Throws if tag or document doesn't exist
  */
 export async function tagsDocRemoveHandler(params: {
 	id: string;
@@ -424,20 +424,20 @@ export async function tagsDocRemoveHandler(params: {
 
 		const { doc: wsDoc, exists: wsSnapshotExists, prevSV: wsPrevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 		if (!wsSnapshotExists) {
-			throw new Error(`工作区根文档不存在`);
+			throw new Error(`Workspace root document does not exist`);
 		}
 		const wsMeta = wsDoc.getMap('meta');
 
 		const pages = getWorkspacePageEntries(wsMeta);
 		const page = pages.find((entry) => entry.id === params.id);
 		if (!page) {
-			throw new Error(`文档 ${params.id} 不存在于工作区`);
+			throw new Error(`Document ${params.id} does not exist in workspace`);
 		}
 
 		const existingOptions = getWorkspaceTagOptions(wsMeta);
 		const tagOption = existingOptions.find((t) => t.value.toLowerCase() === tag.toLowerCase());
 		if (!tagOption) {
-			throw new Error(`标签 "${tag}" 不存在`);
+			throw new Error(`Tag "${tag}" does not exist`);
 		}
 
 		const pageTags = page.entry.get('tags') as Y.Array<string> | undefined;
@@ -454,27 +454,27 @@ export async function tagsDocRemoveHandler(params: {
 
 		return {
 			success: true,
-			message: `标签 "${tag}" 已从文档 ${params.id} 移除`
+			message: `Tag "${tag}" removed from document ${params.id}`
 		};
 	} finally {
 	}
 }
 
 /**
- * tagsDeleteHandler: 删除标签
+ * tagsDeleteHandler: Delete a tag
  *
- * 功能描述：
- * - 从工作区中删除指定标签
- * - 删除标签会影响所有使用该标签的文档
+ * Description:
+ * - Deletes specified tag from workspace
+ * - Deleting a tag affects all documents using that tag
  *
- * @param params.tag - 标签名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含操作结果的对象
+ * @param params.tag - Tag name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing operation result
  *
- * 注意事项：
- * - 标签名称不区分大小写
- * - 删除标签后，所有文档中该标签的关联都会被移除
- * - 如果标签不存在，抛出异常
+ * Notes:
+ * - Tag names are case-insensitive
+ * - After deletion, all associations with this tag are removed from documents
+ * - Throws if tag doesn't exist
  */
 export async function tagsDeleteHandler(params: { tag: string; workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);
@@ -485,13 +485,13 @@ export async function tagsDeleteHandler(params: { tag: string; workspace?: strin
 		await joinWorkspace(socket, workspaceId);
 		const { doc: wsDoc, exists: snapshotExists, prevSV: prevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 		if (!snapshotExists) {
-			throw new Error(`工作区根文档不存在`);
+			throw new Error(`Workspace root document does not exist`);
 		}
 		const meta = wsDoc.getMap('meta');
 
 		const optionsArray = getTagOptionsArray(meta);
 		if (!optionsArray) {
-			throw new Error(`标签 "${tag}" 不存在`);
+			throw new Error(`Tag "${tag}" does not exist`);
 		}
 
 		let foundIndex = -1;
@@ -505,7 +505,7 @@ export async function tagsDeleteHandler(params: { tag: string; workspace?: strin
 		}
 
 		if (foundIndex === -1) {
-			throw new Error(`标签 "${tag}" 不存在`);
+			throw new Error(`Tag "${tag}" does not exist`);
 		}
 
 		optionsArray.delete(foundIndex, 1);
@@ -514,28 +514,28 @@ export async function tagsDeleteHandler(params: { tag: string; workspace?: strin
 
 		return {
 			success: true,
-			message: `标签 "${tag}" 已删除`
+			message: `Tag "${tag}" deleted`
 		};
 	} finally {
 	}
 }
 
 /**
- * tagsDocListHandler: 获取指定标签关联的文档列表
+ * tagsDocListHandler: Get list of documents associated with a tag
  *
- * 功能描述：
- * - 查找所有使用指定标签的文档
- * - 支持大小写敏感/不敏感匹配
- * - 返回文档 ID 和标题列表
+ * Description:
+ * - Finds all documents using the specified tag
+ * - Supports case-sensitive and case-insensitive matching
+ * - Returns document ID and title list
  *
- * @param params.tag - 标签名称（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @param params.ignoreCase - 是否忽略大小写，默认 true
- * @returns 包含工作区 ID、标签名、匹配模式和文档列表的对象
+ * @param params.tag - Tag name (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @param params.ignoreCase - Whether to ignore case, default true
+ * @returns Object containing workspace ID, tag name, match mode, and document list
  *
- * 注意事项：
- * - 如果标签不存在，返回空列表
- * - 每个文档返回 ID 和标题（无标题时显示 '未命名文档'）
+ * Notes:
+ * - Returns empty list if tag doesn't exist
+ * - Each document returns ID and title ('Untitled document' if no title)
  */
 export async function tagsDocListHandler(params: {
 	tag: string;
@@ -578,7 +578,7 @@ export async function tagsDocListHandler(params: {
 				const title = page.entry.get('title');
 				return {
 					id: page.id,
-					title: title || '未命名文档'
+					title: title || 'Untitled document'
 				};
 			});
 

@@ -1,78 +1,78 @@
 /**
- * 模块名称：fileConverter.ts
- * 文件转换工具模块
+ * Module: fileConverter.ts
+ * File conversion utility module
  *
- * 功能描述：
- * - 提供文档格式检测和转换功能
- * - 支持 Markdown、HTML、TXT 等格式转换为 Markdown
- * - 处理 UTF-8 BOM 标记
+ * Description:
+ * - Provides document format detection and conversion
+ * - Supports converting Markdown, HTML, TXT to Markdown
+ * - Handles UTF-8 BOM markers
  *
- * 导出的函数：
- * - convertToMarkdown: 自动检测并转换文档格式为 Markdown
- * - removeBom: 移除 UTF-8 BOM 标记
- * - hasBom: 检测文件是否带有 BOM
+ * Exported functions:
+ * - convertToMarkdown: Auto-detect and convert document format to Markdown
+ * - removeBom: Remove UTF-8 BOM marker
+ * - hasBom: Check if file has BOM
  */
 
 import * as fs from 'fs';
 
 /**
- * convertToMarkdown: 自动检测并转换文档格式为 Markdown
+ * convertToMarkdown: Auto-detect and convert document format to Markdown
  *
- * 功能描述：
- * - 根据文件扩展名或内容自动检测格式
- * - 支持：Markdown、HTML、TXT
- * - 自动移除 UTF-8 BOM 标记
+ * Description:
+ * - Auto-detects format by file extension or content
+ * - Supports: Markdown, HTML, TXT
+ * - Auto-removes UTF-8 BOM marker
  *
- * @param filePath - 文件路径
- * @param content - 文件内容（可选，如果提供则直接使用，不读取文件）
- * @returns 转换后的 Markdown 内容
+ * @param filePath - File path
+ * @param content - File content (optional, if provided used directly without reading file)
+ * @returns Converted Markdown content
  *
- * 支持的格式：
- * - .md, .markdown → 直接返回
- * - .html, .htm → 转换为 Markdown
- * - .txt, .text → 直接返回
- * - 其他格式 → 尝试检测是否为 HTML
+ * Supported formats:
+ * - .md, .markdown -> return as-is
+ * - .html, .htm -> convert to Markdown
+ * - .txt, .text -> return as-is
+ * - Other formats -> attempt HTML detection
  */
 export function convertToMarkdown(filePath: string, content?: string): string {
-	// 如果没有提供内容，从文件读取
+	// If content not provided, read from file
 	let fileContent = content;
 	if (fileContent === undefined) {
 		if (!fs.existsSync(filePath)) {
-			throw new Error(`文件不存在: ${filePath}`);
+			throw new Error(`File not found: ${filePath}`);
 		}
 		fileContent = fs.readFileSync(filePath, 'utf-8');
 	}
 
-	// 移除 UTF-8 BOM 标记（\uFEFF 或 0xFEFF）
+	// Remove UTF-8 BOM marker (\uFEFF or 0xFEFF)
 	if (fileContent.charCodeAt(0) === 0xfeff) {
 		fileContent = fileContent.slice(1);
 	}
 
-	// 去除首尾空白
+	// Trim leading/trailing whitespace
 	const trimmed = fileContent.trim();
 
-	// 获取文件扩展名（小写）
+	// Get file extension (lowercase)
 	const ext = filePath.split('.').pop()?.toLowerCase() || '';
 
-	// 根据扩展名转换
+	// Convert based on extension
 	switch (ext) {
 		case 'md':
 		case 'markdown':
-			// Markdown 文件直接返回
+			// Markdown files returned as-is
 			return trimmed;
 
 		case 'html':
 		case 'htm':
-			// HTML 文件转换为 Markdown
+			// HTML files converted to Markdown
 			return htmlToMarkdown(trimmed);
 
 		case 'txt':
 		case 'text':
-			// 纯文本文件保留原样
+			// Plain text files kept as-is
 			return trimmed;
 
 		default:
-			// 未知格式，尝试检测是否为 HTML
+			// Unknown format, attempt HTML detection
 			if (
 				trimmed.startsWith('<!DOCTYPE') ||
 				trimmed.startsWith('<html') ||
@@ -80,39 +80,39 @@ export function convertToMarkdown(filePath: string, content?: string): string {
 			) {
 				return htmlToMarkdown(trimmed);
 			}
-			// 否则按纯文本处理
+			// Otherwise treat as plain text
 			return trimmed;
 	}
 }
 
 /**
- * htmlToMarkdown: 简单的 HTML 转 Markdown 转换器
+ * htmlToMarkdown: Simple HTML to Markdown converter
  *
- * 功能描述：
- * - 处理常见的 HTML 标签转换为 Markdown 语法
- * - 支持 h1-h6、p、br、strong、b、em、i、del、s、code、pre、a、img、ul、ol、li、blockquote、hr、table 等
+ * Description:
+ * - Converts common HTML tags to Markdown syntax
+ * - Supports h1-h6, p, br, strong, b, em, i, del, s, code, pre, a, img, ul, ol, li, blockquote, hr, table, etc.
  *
- * @param html - HTML 内容
- * @returns 转换后的 Markdown
+ * @param html - HTML content
+ * @returns Converted Markdown
  *
- * 转换规则：
- * - h1-h6 → # 到 ###### 标题
- * - strong/b → **粗体**
- * - em/i → *斜体*
- * - del/s → ~~删除线~~
- * - code → `行内代码`
- * - pre/code → ```代码块```
- * - a → [文本](链接)
- * - img → ![ Alt ](图片链接)
- * - ul/ol → - / 1. 列表
- * - blockquote → > 引用
- * - hr → ---
- * - table → Markdown 表格
+ * Conversion rules:
+ * - h1-h6 -> # to ###### headings
+ * - strong/b -> **bold**
+ * - em/i -> *italic*
+ * - del/s -> ~~strikethrough~~
+ * - code -> `inline code`
+ * - pre/code -> ```code block```
+ * - a -> [text](link)
+ * - img -> ![alt](image url)
+ * - ul/ol -> - / 1. lists
+ * - blockquote -> > quote
+ * - hr -> ---
+ * - table -> Markdown table
  */
 function htmlToMarkdown(html: string): string {
 	let markdown = html;
 
-	// 移除 doctype 和 html/body 标签
+	// Remove doctype and html/body tags
 	markdown = markdown.replace(/<!DOCTYPE[^>]*>/gi, '');
 	markdown = markdown.replace(/<html[^>]*>/gi, '');
 	markdown = markdown.replace(/<\/html>/gi, '');
@@ -120,7 +120,7 @@ function htmlToMarkdown(html: string): string {
 	markdown = markdown.replace(/<body[^>]*>/gi, '');
 	markdown = markdown.replace(/<\/body>/gi, '');
 
-	// 标题转换
+	// Heading conversion
 	markdown = markdown.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n');
 	markdown = markdown.replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n');
 	markdown = markdown.replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n');
@@ -128,37 +128,37 @@ function htmlToMarkdown(html: string): string {
 	markdown = markdown.replace(/<h5[^>]*>([\s\S]*?)<\/h5>/gi, '##### $1\n\n');
 	markdown = markdown.replace(/<h6[^>]*>([\s\S]*?)<\/h6>/gi, '###### $1\n\n');
 
-	// 段落转换（p 标签）
+	// Paragraph conversion (p tag)
 	markdown = markdown.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, '$1\n\n');
 
-	// 换行转换
+	// Line break conversion
 	markdown = markdown.replace(/<br\s*\/?>/gi, '\n');
 
-	// 粗体转换
+	// Bold conversion
 	markdown = markdown.replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**');
 	markdown = markdown.replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**');
 
-	// 斜体转换
+	// Italic conversion
 	markdown = markdown.replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*');
 	markdown = markdown.replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
 
-	// 删除线转换
+	// Strikethrough conversion
 	markdown = markdown.replace(/<del[^>]*>([\s\S]*?)<\/del>/gi, '~~$1~~');
 	markdown = markdown.replace(/<s[^>]*>([\s\S]*?)<\/s>/gi, '~~$1~~');
 
-	// 行内代码转换
+	// Inline code conversion
 	markdown = markdown.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, '`$1`');
 
-	// 代码块转换
+	// Code block conversion
 	markdown = markdown.replace(
 		/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
 		'```\n$1\n```\n\n'
 	);
 
-	// 链接转换
+	// Link conversion
 	markdown = markdown.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, '[$2]($1)');
 
-	// 图片转换
+	// Image conversion
 	markdown = markdown.replace(
 		/<img[^>]*src=["']([^"']*)["'][^>]*alt=["']([^"']*)["'][^>]*\/?>/gi,
 		'![$2]($1)'
@@ -169,7 +169,7 @@ function htmlToMarkdown(html: string): string {
 	);
 	markdown = markdown.replace(/<img[^>]*src=["']([^"']*)["'][^>]*\/?>/gi, '![]($1)');
 
-	// 无序列表转换
+	// Unordered list conversion
 	markdown = markdown.replace(
 		/<ul[^>]*>([\s\S]*?)<\/ul>/gi,
 		(_match: string, listContent: string): string => {
@@ -177,7 +177,7 @@ function htmlToMarkdown(html: string): string {
 		}
 	);
 
-	// 有序列表转换
+	// Ordered list conversion
 	markdown = markdown.replace(
 		/<ol[^>]*>([\s\S]*?)<\/ol>/gi,
 		(_match: string, listContent: string): string => {
@@ -191,25 +191,25 @@ function htmlToMarkdown(html: string): string {
 		}
 	);
 
-	// 引用转换
+	// Blockquote conversion
 	markdown = markdown.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '> $1\n\n');
 
-	// 分隔线转换
+	// Horizontal rule conversion
 	markdown = markdown.replace(/<hr\s*\/?>/gi, '\n---\n\n');
 
-	// 表格转换（基本支持）
+	// Table conversion (basic support)
 	markdown = markdown.replace(
 		/<table[^>]*>([\s\S]*?)<\/table>/gi,
 		(_match: string, tableContent: string): string => {
 			let result = '';
-			// 表头
+			// Table header
 			const headerMatch = tableContent.match(/<thead[^>]*>([\s\S]*?)<\/thead>/i);
 			if (headerMatch) {
 				const headers = headerMatch[1].match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
 				result += '| ' + headers.map((h: string) => stripTags(h)).join(' | ') + ' |\n';
 				result += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
 			}
-			// 表格内容
+			// Table body
 			const bodyMatch = tableContent.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i) || [
 				0,
 				tableContent
@@ -223,53 +223,53 @@ function htmlToMarkdown(html: string): string {
 		}
 	);
 
-	// 移除剩余的 HTML 标签
+	// Remove remaining HTML tags
 	markdown = markdown.replace(/<[^>]+>/g, '');
 
-	// 解码 HTML 实体
+	// Decode HTML entities
 	markdown = decodeHtmlEntities(markdown);
 
-	// 清理多余的空行
+	// Clean up excess blank lines
 	markdown = markdown.replace(/\n{3,}/g, '\n\n');
 
 	return markdown.trim();
 }
 
 /**
- * stripTags: 移除 HTML 标签内容
+ * stripTags: Strip HTML tags from content
  *
- * @param html - 包含 HTML 标签的字符串
- * @returns 去除标签后的纯文本
+ * @param html - String containing HTML tags
+ * @returns Plain text with tags removed
  */
 function stripTags(html: string): string {
 	return html.replace(/<[^>]+>/g, '').trim();
 }
 
 /**
- * decodeHtmlEntities: 解码 HTML 实体
+ * decodeHtmlEntities: Decode HTML entities
  *
- * 功能描述：
- * - 将 HTML 实体转换为对应的字符
- * - 支持命名实体和数字实体（十进制/十六进制）
+ * Description:
+ * - Convert HTML entities to corresponding characters
+ * - Supports named entities and numeric entities (decimal/hex)
  *
- * @param text - 包含 HTML 实体的文本
- * @returns 解码后的文本
+ * @param text - Text containing HTML entities
+ * @returns Decoded text
  *
- * 支持的实体：
- * - &nbsp; → 空格
- * - &amp; → &
- * - &lt; → <
- * - &gt; → >
- * - &quot; → "
- * - &#39; → '
- * - &mdash; → —
- * - &ndash; → –
- * - &hellip; → …
- * - &#数字; → 十进制字符
- * - &#x数字; → 十六进制字符
+ * Supported entities:
+ * - &nbsp; -> space
+ * - &amp; -> &
+ * - &lt; -> <
+ * - &gt; -> >
+ * - &quot; -> "
+ * - &#39; -> '
+ * - &mdash; -> \u2014 (em dash)
+ * - &ndash; -> \u2013 (en dash)
+ * - &hellip; -> \u2026 (ellipsis)
+ * - &#digits; -> decimal character
+ * - &#xHEX; -> hex character
  */
 function decodeHtmlEntities(text: string): string {
-	// 常见 HTML 实体映射
+	// Common HTML entity mapping
 	const entities: Record<string, string> = {
 		'&nbsp;': ' ',
 		'&amp;': '&',
@@ -292,17 +292,17 @@ function decodeHtmlEntities(text: string): string {
 
 	let result = text;
 
-	// 替换命名实体
+	// Replace named entities
 	for (const [entity, char] of Object.entries(entities)) {
 		result = result.replace(new RegExp(entity, 'gi'), char);
 	}
 
-	// 处理数字形式的 HTML 实体（十进制）
+	// Handle numeric HTML entities (decimal)
 	result = result.replace(/&#(\d+);/g, (_: string, code: string): string => {
 		return String.fromCharCode(parseInt(code, 10));
 	});
 
-	// 处理数字形式的 HTML 实体（十六进制）
+	// Handle numeric HTML entities (hex)
 	result = result.replace(/&#x([0-9a-f]+);/gi, (_: string, code: string): string => {
 		return String.fromCharCode(parseInt(code, 16));
 	});
@@ -311,7 +311,7 @@ function decodeHtmlEntities(text: string): string {
 }
 
 /**
- * 移除 UTF-8 BOM 标记
+ * Remove UTF-8 BOM marker
  */
 export function removeBom(content: string): string {
 	if (content.charCodeAt(0) === 0xfeff) {
@@ -321,7 +321,7 @@ export function removeBom(content: string): string {
 }
 
 /**
- * 检测文件是否带有 BOM
+ * Check if file has BOM
  */
 export function hasBom(content: string): boolean {
 	return content.charCodeAt(0) === 0xfeff;

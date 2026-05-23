@@ -1,6 +1,6 @@
 /**
- * 文档 CLI 模块
- * 提供文档管理的命令行接口，包括列表、详情、创建、删除、复制、更新、搜索、替换、追加等功能
+ * Document CLI module
+ * Provides command-line interface for document management, including list, details, create, delete, copy, update, search, replace, and append
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -22,18 +22,18 @@ import {
 } from '../core/docs.js';
 
 /**
- * 解析内容参数
- * 支持 --content 直接输入或 @ 开头的文件路径
+ * Parse content parameter
+ * Supports --content for direct input or file paths starting with @
  *
- * @param contentValue - --content 参数值（支持 @filePath 格式）
- * @returns 解析后的内容字符串
+ * @param contentValue - --content parameter value (supports @filePath format)
+ * @returns Parsed content string
  */
 function parseContentParam(contentValue?: string): string {
 	if (!contentValue) {
 		return '';
 	}
 
-	// 检查是否为有效的文件路径格式
+	// Check if it's a valid file path format
 	if (isFilePath(contentValue)) {
 		const filePath = contentValue.slice(1);
 		return convertToMarkdown(filePath);
@@ -43,41 +43,41 @@ function parseContentParam(contentValue?: string): string {
 }
 
 /**
- * 文档命令配置
- * 定义所有文档相关命令的参数和处理器映射
+ * Document command configuration
+ * Defines parameter and handler mappings for all document-related commands
  */
 const docCommands: Record<string, CommandConfig> = {
 	/**
-	 * all 命令：列出工作区所有文档，包含已删除的文档记录
-	 * 用法：all [--count <n>] [--skip <n>] [--after <cursor>] [--workspace <workspace-id>]
+	 * all command: list all documents in the workspace, including deleted document records
+	 * Usage: all [--count <n>] [--skip <n>] [--after <cursor>] [--workspace <workspace-id>]
 	 */
 	all: {
 		name: 'all',
-		description: '列出工作区所有文档，包含已删除的文档记录（支持分页）',
+		description: 'List all documents in the workspace, including deleted document records (supports pagination)',
 		usage: 'all [--count <n>] [--skip <n>] [--after <cursor>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'count',
 				short: 'c',
-				description: '每页返回数量（默认 50）',
+				description: 'Number of results per page (default 50)',
 				type: 'number'
 			},
 			{
 				name: 'skip',
 				short: 's',
-				description: '偏移量（用于跳过前面的文档）',
+				description: 'Offset (for skipping preceding documents)',
 				type: 'number'
 			},
 			{
 				name: 'after',
 				short: 'a',
-				description: '游标值（用于分页，获取下一页）',
+				description: 'Cursor value (for pagination, fetch next page)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -90,30 +90,30 @@ const docCommands: Record<string, CommandConfig> = {
 		})
 	},
 	/**
-	 * list 命令：列出工作区所有文档
-	 * 用法：list [--count <n>] [--skip <n>] [--after <cursor>] [--workspace <workspace-id>]
+	 * list command: list all documents in the workspace
+	 * Usage: list [--count <n>] [--skip <n>] [--after <cursor>] [--workspace <workspace-id>]
 	 */
 	list: {
 		name: 'list',
-		description: '列出工作区所有文档（支持分页）',
+		description: 'List all documents in the workspace (supports pagination)',
 		usage: 'list [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			},
 			{
 				name: 'count',
 				short: 'c',
-				description: '返回结果数量（默认 20）',
+				description: 'Number of results to return (default 20)',
 				type: 'number'
 			},
 			{
 				name: 'tag',
 				short: 't',
-				description: '标签',
+				description: 'Tag',
 				type: 'string'
 			}
 		],
@@ -126,31 +126,31 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * info 命令：获取文档详情
-	 * 用法：info --id <doc-id> [--workspace <workspace-id>] [--content <mode>]
+	 * info command: get document details
+	 * Usage: info --id <doc-id> [--workspace <workspace-id>] [--content <mode>]
 	 */
 	info: {
 		name: 'info',
-		description: '获取指定文档的详细信息（包含内容与元数据）',
+		description: 'Get detailed information for the specified document (including content and metadata)',
 		usage: 'info --id <doc-id> [--workspace <workspace-id>] [--content <mode>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '内容输出模式：markdown(默认)/raw/hidden',
+				description: 'Content output mode: markdown(default)/raw/hidden',
 				type: 'string'
 			}
 		],
@@ -163,47 +163,47 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * create 命令：创建文档
-	 * 用法：create --title <title> [--content <markdown|@file>] [--folder <folder-id>] [--tags <tag1,tag2>] [--icon <emoji>] [--workspace <workspace-id>]
+	 * create command: create a document
+	 * Usage: create --title <title> [--content <markdown|@file>] [--folder <folder-id>] [--tags <tag1,tag2>] [--icon <emoji>] [--workspace <workspace-id>]
 	 */
 	create: {
 		name: 'create',
-		description: '创建新文档（支持从 Markdown 文件导入）',
+		description: 'Create a new document (supports import from Markdown file)',
 		usage: 'create --title <title> [--content <markdown|@file>] [--folder <folder-id>] [--tags <tag1,tag2>] [--icon <emoji>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'title',
 				short: 't',
-				description: '文档标题（必填）',
+				description: 'Document title (required)',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '文档内容（Markdown 格式；以 @ 开头表示文件路径）',
+				description: 'Document content (Markdown format; prefix with @ for file path)',
 				type: 'string'
 			},
 			{
 				name: 'folder',
 				short: 'f',
-				description: '文档所在文件夹 ID（可选）',
+				description: 'Folder ID where the document resides (optional)',
 				type: 'string'
 			},
 			{
 				name: 'tags',
-				description: '标签列表（逗号分隔，如 "tag1,tag2"）',
+				description: 'Tag list (comma-separated, e.g. "tag1,tag2")',
 				type: 'string'
 			},
 			{
 				name: 'icon',
 				short: 'I',
-				description: '文档图标（emoji 字符，如 🎯、📝、💡）',
+				description: 'Document icon (emoji character, e.g. 🎯, 📝, 💡)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -219,42 +219,42 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * search 命令：文档搜索
-	 * 用法：search [--query <keyword>] [--workspace <workspace-id>] [--count <n>] [--match-mode <mode>] [--tag <tag>]
+	 * search command: search documents
+	 * Usage: search [--query <keyword>] [--workspace <workspace-id>] [--count <n>] [--match-mode <mode>] [--tag <tag>]
 	 */
 	search: {
 		name: 'search',
-		description: '在文档中搜索关键词（支持标签过滤）',
+		description: 'Search for keywords in documents (supports tag filtering)',
 		usage: 'search [--query <keyword>] [--workspace <workspace-id>] [--count <n>] [--match-mode <mode>] [--tag <tag>]',
 		args: [
 			{
 				name: 'query',
 				short: 'q',
-				description: '搜索关键词（可与 --tag 组合使用）',
+				description: 'Search keyword (can be combined with --tag)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			},
 			{
 				name: 'count',
 				short: 'c',
-				description: '返回结果数量（默认 20）',
+				description: 'Number of results to return (default 20)',
 				type: 'number'
 			},
 			{
 				name: 'match-mode',
 				short: 'm',
-				description: '匹配模式：substring(包含)/prefix(前缀)/suffix(后缀)/exact(完全)',
+				description: 'Match mode: substring(contains)/prefix/suffix/exact',
 				default: 'substring',
 				type: 'string'
 			},
 			{
 				name: 'tag',
-				description: '按标签过滤（可与 --query 组合）',
+				description: 'Filter by tag (can be combined with --query)',
 				type: 'string'
 			}
 		],
@@ -269,25 +269,25 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * delete 命令：删除文档
-	 * 用法：delete --id <doc-id> [--workspace <workspace-id>]
+	 * delete command: delete a document
+	 * Usage: delete --id <doc-id> [--workspace <workspace-id>]
 	 */
 	delete: {
 		name: 'delete',
-		description: '删除指定的文档',
+		description: 'Delete the specified document',
 		usage: 'delete --id <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '要删除的文档 ID',
+				description: 'Document ID to delete',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -299,43 +299,43 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * copy 命令：复制文档
-	 * 用法：copy --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--workspace <workspace-id>]
+	 * copy command: copy a document
+	 * Usage: copy --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--workspace <workspace-id>]
 	 */
 	copy: {
 		name: 'copy',
-		description: '复制现有文档为新文档',
+		description: 'Copy an existing document as a new document',
 		usage: 'copy --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '源文档 ID',
+				description: 'Source document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'title',
 				short: 't',
-				description: '新文档的标题（不指定则使用原标题）',
+				description: 'Title for the new document (uses original title if not specified)',
 				type: 'string'
 			},
 			{
 				name: 'parent',
 				short: 'p',
-				description: '父文档 ID（创建为子文档）',
+				description: 'Parent document ID (creates as child document)',
 				type: 'string'
 			},
 			{
 				name: 'folder',
 				short: 'f',
-				description: '目标文件夹 ID',
+				description: 'Target folder ID',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -350,49 +350,49 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * update 命令：更新文档属性
-	 * 用法：update --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--icon <emoji>] [--workspace <workspace-id>]
+	 * update command: update document properties
+	 * Usage: update --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--icon <emoji>] [--workspace <workspace-id>]
 	 */
 	update: {
 		name: 'update',
-		description: '更新文档属性（标题、父子关系、文件夹、图标）',
+		description: 'Update document properties (title, parent-child relationship, folder, icon)',
 		usage: 'update --id <doc-id> [--title <title>] [--parent <parent-id>] [--folder <folder-id>] [--icon <emoji>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '要更新的文档 ID',
+				description: 'Document ID to update',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'title',
 				short: 't',
-				description: '新的文档标题',
+				description: 'New document title',
 				type: 'string'
 			},
 			{
 				name: 'parent',
 				short: 'p',
-				description: '新的父文档 ID（可移除父子关系）',
+				description: 'New parent document ID (can remove parent-child relationship)',
 				type: 'string'
 			},
 			{
 				name: 'folder',
 				short: 'f',
-				description: '文档新的目标文件夹',
+				description: 'New target folder for the document',
 				type: 'string'
 			},
 			{
 				name: 'icon',
 				short: 'I',
-				description: '文档图标（emoji 字符，如 🎯、📝、💡）',
+				description: 'Document icon (emoji character, e.g. 🎯, 📝, 💡)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -408,51 +408,51 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * replace 命令：替换文档内容
-	 * 用法：replace --id <doc-id> --search <text> --replace <text> [--workspace <workspace-id>] [--match-all] [--preview]
+	 * replace command: replace document content
+	 * Usage: replace --id <doc-id> --search <text> --replace <text> [--workspace <workspace-id>] [--match-all] [--preview]
 	 */
 	replace: {
 		name: 'replace',
-		description: '替换文档中的指定文本',
+		description: 'Replace specified text in a document',
 		usage: 'replace --id <doc-id> --search <text> --replace <text> [--workspace <workspace-id>] [--match-all] [--preview]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'search',
 				short: 's',
-				description: '要搜索替换的文本',
+				description: 'Text to search and replace',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'replace',
 				short: 'r',
-				description: '替换后的文本',
+				description: 'Replacement text',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			},
 			{
 				name: 'match-all',
 				short: 'a',
-				description: '替换所有匹配项（默认 true）',
+				description: 'Replace all matches (default true)',
 				type: 'boolean'
 			},
 			{
 				name: 'preview',
 				short: 'p',
-				description: '预览模式（仅显示替换结果，不实际修改）',
+				description: 'Preview mode (show replacement results without making changes)',
 				type: 'boolean'
 			}
 		],
@@ -468,31 +468,31 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * append 命令：追加文档内容
-	 * 用法：append --id <doc-id> [--content <markdown|@file>] [--workspace <workspace-id>]
+	 * append command: append content to a document
+	 * Usage: append --id <doc-id> [--content <markdown|@file>] [--workspace <workspace-id>]
 	 */
 	append: {
 		name: 'append',
-		description: '在文档末尾追加 Markdown 内容',
+		description: 'Append Markdown content to the end of a document',
 		usage: 'append --id <doc-id> [--content <markdown|@file>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '目标文档 ID',
+				description: 'Target document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '要追加的 Markdown 内容（以 @ 开头表示文件路径）',
+				description: 'Markdown content to append (prefix with @ for file path)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -505,31 +505,31 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * publish 命令：发布文档（公开访问）
-	 * 用法：publish --id <doc-id> [--mode <Page|Edgeless>] [--workspace <workspace-id>]
+	 * publish command: publish a document (public access)
+	 * Usage: publish --id <doc-id> [--mode <Page|Edgeless>] [--workspace <workspace-id>]
 	 */
 	publish: {
 		name: 'publish',
-		description: '发布文档（公开访问）',
+		description: 'Publish a document (public access)',
 		usage: 'publish --id <doc-id> [--mode <Page|Edgeless>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '要发布的文档 ID',
+				description: 'Document ID to publish',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'mode',
 				short: 'm',
-				description: '公开模式：Page 或 Edgeless',
+				description: 'Public mode: Page or Edgeless',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -542,25 +542,25 @@ const docCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * unpublish 命令：取消发布文档
-	 * 用法：unpublish --id <doc-id> [--workspace <workspace-id>]
+	 * unpublish command: unpublish a document
+	 * Usage: unpublish --id <doc-id> [--workspace <workspace-id>]
 	 */
 	unpublish: {
 		name: 'unpublish',
-		description: '取消发布文档',
+		description: 'Unpublish a document',
 		usage: 'unpublish --id <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'id',
 				short: 'i',
-				description: '要取消发布的文档 ID',
+				description: 'Document ID to unpublish',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID（默认使用配置中的工作区）',
+				description: 'Workspace ID (uses configured workspace by default)',
 				type: 'string'
 			}
 		],
@@ -573,7 +573,7 @@ const docCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 文档 CLI 操作映射
- * 将命令配置转换为命令映射，供 CLI 入口使用
+ * Document CLI operation mapping
+ * Converts command configuration to command mapping for use by the CLI entry point
  */
 export const runDocCommands = generateCommandMap(docCommands);

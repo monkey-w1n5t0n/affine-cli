@@ -1,6 +1,6 @@
 /**
- * 数据库 CLI 模块
- * 提供数据库管理的命令行接口
+ * Database CLI module
+ * Provides command-line interface for database management
  */
 
 import { CommandConfig, generateCommandMap } from '../utils/cliUtils.js';
@@ -18,51 +18,51 @@ import {
 } from '../core/database.js';
 
 /**
- * 解析筛选条件参数
- * 将用户输入的筛选条件字符串解析为可用的数组格式
- * 支持 JSON 字符串和 @file 格式的文件路径
+ * Parse filter parameter
+ * Parses the user-provided filter string into a usable array format
+ * Supports JSON strings and @file format file paths
  *
- * @param filterValue - 筛选条件字符串，支持：
- *   - JSON 数组格式（如 '[{"column":"名称","operator":"eq","value":"测试"}]'）
- *   - 高级筛选格式（如 '{"mode":"and","filters":[...]}'）
- *   - @file 格式（如 '@filter.json' 表示读取文件内容）
- * @returns 解析后的筛选条件数组，未输入时返回 undefined
- * @throws 格式无效时抛出错误
+ * @param filterValue - Filter string, supports:
+ *   - JSON array format (e.g. '[{"column":"name","operator":"eq","value":"test"}]')
+ *   - Advanced filter format (e.g. '{"mode":"and","filters":[...]}')
+ *   - @file format (e.g. '@filter.json' reads file contents)
+ * @returns Parsed filter array, or undefined if no input
+ * @throws Error if format is invalid
  */
 function parseFilter(filterValue: string | undefined) {
-	// 无输入时返回 undefined
+	// Return undefined when no input
 	if (!filterValue) return undefined;
 
-	// 使用通用 JSON 解析函数处理字符串或文件
+	// Use generic JSON parsing function for strings or files
 	const parsed = parseJsonContent(filterValue, {
 		allowArray: true,
 		allowObject: true,
 		fieldName: 'filter'
 	});
 
-	// 处理数组格式（标准筛选条件）
+	// Handle array format (standard filter conditions)
 	if (Array.isArray(parsed)) {
 		return parsed.length > 0 ? parsed : undefined;
 	}
 
-	// 处理对象格式（带 mode 字段的高级筛选）
+	// Handle object format (advanced filter with mode field)
 	const data = parsed as Record<string, any>;
 	if (data && 'mode' in data && Array.isArray(data['filters'])) {
 		return data;
 	}
 
-	// 格式无效
-	throw new Error('filter 参数必须是有效的 JSON 数组格式');
+	// Invalid format
+	throw new Error('filter parameter must be a valid JSON array format');
 }
 
 /**
- * 解析 JSON 内容参数（对象格式）
- * 专用辅助函数，用于解析 cells、values 等需要对象格式的参数
+ * Parse JSON content parameter (object format)
+ * Helper function for parsing cells, values, and other parameters requiring object format
  *
- * @param value - 输入字符串，支持 JSON 字符串或 @file 格式
- * @param fieldName - 参数名称，用于错误信息
- * @returns 解析后的对象
- * @throws 格式无效时抛出错误
+ * @param value - Input string, supports JSON string or @file format
+ * @param fieldName - Parameter name, used in error messages
+ * @returns Parsed object
+ * @throws Error if format is invalid
  */
 function parseObjectContent(value: string | undefined, fieldName: string): Record<string, unknown> {
 	if (!value) return {};
@@ -77,13 +77,13 @@ function parseObjectContent(value: string | undefined, fieldName: string): Recor
 }
 
 /**
- * 解析 JSON 内容参数（数组或对象格式）
- * 通用辅助函数，用于解析 content 等需要灵活格式的参数
+ * Parse JSON content parameter (array or object format)
+ * Generic helper function for parsing content and other flexible-format parameters
  *
- * @param value - 输入字符串，支持 JSON 字符串或 @file 格式
- * @param fieldName - 参数名称，用于错误信息
- * @returns 解析后的数据（数组或对象）
- * @throws 格式无效时抛出错误
+ * @param value - Input string, supports JSON string or @file format
+ * @param fieldName - Parameter name, used in error messages
+ * @returns Parsed data (array or object)
+ * @throws Error if format is invalid
  */
 function parseDataContent(value: string | undefined, fieldName: string): unknown {
 	if (!value) return undefined;
@@ -96,30 +96,30 @@ function parseDataContent(value: string | undefined, fieldName: string): unknown
 }
 
 /**
- * 数据库命令配置
- * 定义所有数据库相关命令的参数和处理器映射
+ * Database command configuration
+ * Defines parameter and handler mappings for all database-related commands
  */
 const databaseCommands: Record<string, CommandConfig> = {
 	/**
-	 * list 命令：列出文档中的所有数据库
-	 * 用法：list --doc <doc-id> [--workspace <workspace-id>]
+	 * list command: list all databases in a document
+	 * Usage: list --doc <doc-id> [--workspace <workspace-id>]
 	 */
 	list: {
 		name: 'list',
-		description: '列出文档中的所有数据库',
+		description: 'List all databases in a document',
 		usage: 'list --doc <doc-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -131,32 +131,32 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * columns 命令：读取数据库列定义
-	 * 用法：columns --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]
+	 * columns command: read database column definitions
+	 * Usage: columns --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]
 	 */
 	columns: {
 		name: 'columns',
-		description: '读取数据库列定义',
+		description: 'Read database column definitions',
 		usage: 'columns --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -169,55 +169,55 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * query 命令：查询数据库行数据
-	 * 用法：query --doc <doc-id> --id <database-block-id> [--rows <ids>] [--columns <names>] [--query <json>] [--full] [--workspace <workspace-id>]
+	 * query command: query database row data
+	 * Usage: query --doc <doc-id> --id <database-block-id> [--rows <ids>] [--columns <names>] [--query <json>] [--full] [--workspace <workspace-id>]
 	 */
 	query: {
 		name: 'query',
-		description: '查询数据库行数据',
+		description: 'Query database row data',
 		usage: 'query --doc <doc-id> --id <database-block-id> [--rows <ids>] [--columns <names>] [--query <json>] [--full] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'columns',
-				description: '用于查询输出的列名（逗号分隔）',
+				description: 'Column names for query output (comma-separated)',
 				type: 'string'
 			},
 			{
 				name: 'rows',
-				description: '用于查询输出的行 ID（逗号分隔）',
+				description: 'Row IDs for query output (comma-separated)',
 				type: 'string'
 			},
 			{
 				name: 'query',
 				short: 'q',
 				description:
-					'筛选条件（JSON 数组，如：[{ column: string; operator: string; value: string }] 或者 { mode: "and" | "or"; filters: FilterCondition[] }）',
+					'Filter conditions (JSON array, e.g.: [{ column: string; operator: string; value: string }] or { mode: "and" | "or"; filters: FilterCondition[] })',
 				type: 'string'
 			},
 			{
 				name: 'full',
 				short: 'f',
-				description: '是否完整输出',
+				description: 'Whether to output full data',
 				type: 'boolean'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -234,44 +234,44 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * remove 命令：删除数据库行
-	 * 用法：remove --doc <doc-id> --id <database-block-id> [--row <row-id>] [--query <json>] [--workspace <workspace-id>]
+	 * remove command: delete database rows
+	 * Usage: remove --doc <doc-id> --id <database-block-id> [--row <row-id>] [--query <json>] [--workspace <workspace-id>]
 	 */
 	remove: {
 		name: 'remove',
-		description: '删除数据库行',
+		description: 'Delete database rows',
 		usage: 'remove --doc <doc-id> --id <database-block-id> [--row <row-id>] [--query <json>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'row',
 				short: 'r',
-				description: '行 block ID（单独指定行）',
+				description: 'Row block ID (specify a single row)',
 				type: 'string'
 			},
 			{
 				name: 'query',
 				short: 'q',
-				description: '筛选条件（JSON 数组，匹配多行删除）',
+				description: 'Filter conditions (JSON array, match multiple rows for deletion)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -286,51 +286,51 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * update 命令：更新数据库行
-	 * 用法：update --doc <doc-id> --id <database-block-id> --values <json|@file> [--row <id>] [--query <json>] [--workspace <workspace-id>]
+	 * update command: update database rows
+	 * Usage: update --doc <doc-id> --id <database-block-id> --values <json|@file> [--row <id>] [--query <json>] [--workspace <workspace-id>]
 	 */
 	update: {
 		name: 'update',
-		description: '更新数据库行',
+		description: 'Update database rows',
 		usage: 'update --doc <doc-id> --id <database-block-id> --values <json|@file> [--row <id>] [--query <json>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'values',
 				short: 'v',
-				description: '单元格数据（JSON 格式；以 @ 开头表示文件路径）',
+				description: 'Cell data (JSON format; prefix with @ for file path)',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'row',
 				short: 'r',
-				description: '行 block ID（单独指定行）',
+				description: 'Row block ID (specify a single row)',
 				type: 'string'
 			},
 			{
 				name: 'query',
 				short: 'q',
-				description: '筛选条件（JSON 数组，匹配多行更新）',
+				description: 'Filter conditions (JSON array, match multiple rows for update)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -346,70 +346,70 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * create 命令：创建数据库
-	 * 用法：create --content <json|@file> [--doc <doc-id>] [--title <name>] [--view-mode <mode>] [--workspace <workspace-id>]
+	 * create command: create a database
+	 * Usage: create --content <json|@file> [--doc <doc-id>] [--title <name>] [--view-mode <mode>] [--workspace <workspace-id>]
 	 *
-	 * content 格式支持：
-	 *   - 数组格式：如 [{"title":"行1","状态":"进行中"},...]
-	 *   - 对象格式：如 {"title":"数据库标题","data":[...],"columns":[...]}
+	 * Content format supports:
+	 *   - Array format: e.g. [{"title":"Row 1","status":"In progress"},...]
+	 *   - Object format: e.g. {"title":"Database title","data":[...],"columns":[...]}
 	 */
 	create: {
 		name: 'create',
-		description: '创建数据库（可指定文档或创建新文档）',
+		description: 'Create a database (can specify a document or create a new one)',
 		usage: 'create --content <json|@file> [--doc <doc-id>] [--title <name>] [--view-mode <mode>] [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID（不指定则创建新文档）',
+				description: 'Document ID (creates a new document if not specified)',
 				type: 'string'
 			},
 			{
 				name: 'title',
 				short: 't',
-				description: '新建文档的标题，数据表的标题',
+				description: 'Title for the new document, title of the database',
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
 				description:
-					'数据（JSON 格式，支持数组或 {title:"",data:[],columns:[]} 格式；以 @ 开头表示文件路径）',
+					'Data (JSON format, supports array or {title:"",data:[],columns:[]} format; prefix with @ for file path)',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'view-mode',
 				short: 'm',
-				description: '视图模式（table/kanban）',
+				description: 'View mode (table/kanban)',
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
 		handler: createDatabaseHandler,
 		paramsMapper: (parsed) => {
-			// 解析内容数据
+			// Parse content data
 			const data = parseDataContent(parsed.content || parsed.c, 'content');
 
-			// 提取列定义（如果有）
+			// Extract column definitions (if any)
 			let columns: Array<{ name: string; type: string; options?: string[] }> = [];
 			let title = parsed.title || '';
 
-			// 从对象格式中提取 columns 和 title
+			// Extract columns and title from object format
 			if (data && typeof data === 'object' && !Array.isArray(data)) {
 				const content = data as Record<string, unknown>;
 
-				// 提取列定义
+				// Extract column definitions
 				if (Array.isArray(content.columns)) {
 					columns = content.columns;
 				}
 
-				// 提取标题
+				// Extract title
 				if (!title && content.title) {
 					title = String(content.title);
 				}
@@ -427,32 +427,32 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * delete 命令：删除数据库
-	 * 用法：delete --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]
+	 * delete command: delete a database
+	 * Usage: delete --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]
 	 */
 	delete: {
 		name: 'delete',
-		description: '删除数据库',
+		description: 'Delete a database',
 		usage: 'delete --doc <doc-id> --id <database-block-id> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -465,39 +465,39 @@ const databaseCommands: Record<string, CommandConfig> = {
 	},
 
 	/**
-	 * insert 命令：插入数据到数据库
-	 * 用法：insert --doc <doc-id> --id <database-block-id> --content <json|@file> [--workspace <workspace-id>]
+	 * insert command: insert data into a database
+	 * Usage: insert --doc <doc-id> --id <database-block-id> --content <json|@file> [--workspace <workspace-id>]
 	 */
 	insert: {
 		name: 'insert',
-		description: '插入数据到数据库',
+		description: 'Insert data into a database',
 		usage: 'insert --doc <doc-id> --id <database-block-id> --content <json|@file> [--workspace <workspace-id>]',
 		args: [
 			{
 				name: 'doc',
 				short: 'd',
-				description: '文档 ID',
+				description: 'Document ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'id',
 				short: 'i',
-				description: '数据库 block ID',
+				description: 'Database block ID',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'content',
 				short: 'c',
-				description: '数据（JSON 格式，支持数组或 {data:[]} 格式；以 @ 开头表示文件路径）',
+				description: 'Data (JSON format, supports array or {data:[]} format; prefix with @ for file path)',
 				required: true,
 				type: 'string'
 			},
 			{
 				name: 'workspace',
 				short: 'w',
-				description: '工作区 ID',
+				description: 'Workspace ID',
 				type: 'string'
 			}
 		],
@@ -512,7 +512,7 @@ const databaseCommands: Record<string, CommandConfig> = {
 };
 
 /**
- * 数据库 CLI 操作映射
- * 将命令配置转换为命令映射，供 CLI 入口使用
+ * Database CLI operation mapping
+ * Converts command configuration to command mapping for use by the CLI entry point
  */
 export const runDatabaseCommands = generateCommandMap(databaseCommands);

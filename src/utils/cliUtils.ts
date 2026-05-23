@@ -1,37 +1,37 @@
 /**
- * 模块名称：cliUtils.ts
- * CLI 工具函数模块
+ * Module: cliUtils.ts
+ * CLI utility functions module
  *
- * 功能描述：
- * - 提供命令行参数解析功能
- * - 生成帮助信息和结果格式化
- * - 定义 CLI 相关的类型和接口
+ * Description:
+ * - Provides command-line argument parsing
+ * - Generates help text and formats output
+ * - Defines CLI-related types and interfaces
  *
- * 导出的类型：
- * - CommandResult: CLI 命令执行结果
- * - CommandHandler: CLI 命令处理器
- * - ArgDef: 参数定义
- * - CommandConfig: 命令配置
- * - CliAction: CLI 操作定义
- * - CliModule: CLI 模块定义
+ * Exported types:
+ * - CommandResult: CLI command execution result
+ * - CommandHandler: CLI command handler
+ * - ArgDef: Argument definition
+ * - CommandConfig: Command configuration
+ * - CliAction: CLI action definition
+ * - CliModule: CLI module definition
  *
- * 导出的函数：
- * - parseArgs: 解析命令行参数
- * - createCommandHandler: 创建命令处理器
- * - convertToCliAction: 转换为 CLI 操作
- * - generateCommandMap: 生成命令映射
- * - formatOutput: 格式化输出
- * - outputResult: 输出结果并退出
- * - generateHelp: 生成帮助文本
+ * Exported functions:
+ * - parseArgs: Parse command-line arguments
+ * - createCommandHandler: Create a command handler
+ * - convertToCliAction: Convert to CLI action
+ * - generateCommandMap: Generate command map
+ * - formatOutput: Format output
+ * - outputResult: Output result and exit
+ * - generateHelp: Generate help text
  */
 
 /**
- * CommandResult: CLI 命令执行结果类型
+ * CommandResult: CLI command execution result type
  *
- * @property success - 是否成功
- * @property output - 输出文本
- * @property error - 错误信息
- * @property data - 返回数据
+ * @property success - Whether successful
+ * @property output - Output text
+ * @property error - Error message
+ * @property data - Returned data
  */
 export type CommandResult = {
 	success: boolean;
@@ -41,23 +41,23 @@ export type CommandResult = {
 };
 
 /**
- * CommandHandler: CLI 命令处理器类型
+ * CommandHandler: CLI command handler type
  *
- * @param args - 命令行参数数组
+ * @param args - Command-line argument array
  * @returns CommandResult
  */
 export type CommandHandler = (args: string[]) => Promise<CommandResult>;
 
 /**
- * ArgDef: 参数定义类型
+ * ArgDef: Argument definition type
  *
- * @property name - 参数名称
- * @property short - 短名称（如 -w）
- * @property description - 参数描述
- * @property required - 是否必需
- * @property default - 默认值
- * @property type - 参数类型（string/number/boolean）
- * @property allowEmpty - 是否允许空字符串值
+ * @property name - Argument name
+ * @property short - Short name (e.g. -w)
+ * @property description - Argument description
+ * @property required - Whether required
+ * @property default - Default value
+ * @property type - Argument type (string/number/boolean)
+ * @property allowEmpty - Whether empty string values are allowed
  */
 export type ArgDef = {
 	name: string;
@@ -66,18 +66,18 @@ export type ArgDef = {
 	required?: boolean;
 	default?: string;
 	type: 'string' | 'number' | 'boolean';
-	allowEmpty?: boolean; // 是否允许空字符串值
+	allowEmpty?: boolean; // Whether empty string values are allowed
 };
 
 /**
- * CommandConfig: 命令配置接口
+ * CommandConfig: Command configuration interface
  *
- * @property name - 命令名称
- * @property description - 命令描述
- * @property usage - 使用示例
- * @property args - 参数定义数组
- * @property handler - 命令处理器
- * @property paramsMapper - 参数映射函数（可选）
+ * @property name - Command name
+ * @property description - Command description
+ * @property usage - Usage example
+ * @property args - Argument definition array
+ * @property handler - Command handler
+ * @property paramsMapper - Argument mapping function (optional)
  */
 export interface CommandConfig {
 	name: string;
@@ -89,13 +89,13 @@ export interface CommandConfig {
 }
 
 /**
- * CliAction: CLI 操作定义类型
+ * CliAction: CLI action definition type
  *
- * @property name - 操作名称
- * @property description - 操作描述
- * @property usage - 使用示例
- * @property handler - 命令处理器
- * @property args - 参数定义数组（可选）
+ * @property name - Action name
+ * @property description - Action description
+ * @property usage - Usage example
+ * @property handler - Command handler
+ * @property args - Argument definition array (optional)
  */
 export type CliAction = {
 	name: string;
@@ -106,11 +106,11 @@ export type CliAction = {
 };
 
 /**
- * CliModule: CLI 模块定义类型
+ * CliModule: CLI module definition type
  *
- * @property name - 模块名称
- * @property description - 模块描述
- * @property actions - 操作映射
+ * @property name - Module name
+ * @property description - Module description
+ * @property actions - Action map
  */
 export type CliModule = {
 	name: string;
@@ -119,46 +119,46 @@ export type CliModule = {
 };
 
 /* ============================================================================
- * 全局输出格式控制
+ * Global output format control
  * ============================================================================ */
 
 /**
- * 全局输出格式变量
- * 默认为 json 格式输出
+ * Global output format variable
+ * Defaults to json output format
  */
 let outputFormat: 'text' | 'json' = 'json';
 
 /**
- * setOutputFormat: 设置全局输出格式
+ * setOutputFormat: Set global output format
  *
- * @param format - 输出格式（text/json）
+ * @param format - Output format (text/json)
  */
 export function setOutputFormat(format: 'text' | 'json'): void {
 	outputFormat = format;
 }
 
 /**
- * getOutputFormat: 获取全局输出格式
+ * getOutputFormat: Get global output format
  *
- * @returns 当前输出格式
+ * @returns Current output format
  */
 export function getOutputFormat(): 'text' | 'json' {
 	return outputFormat;
 }
 
 /**
- * parseArgs: 解析命令行参数
+ * parseArgs: Parse command-line arguments
  *
- * @param args - 原始参数数组
- * @param argDefs - 参数定义数组
- * @returns 包含 parsed（解析后的参数）、positional（位置参数）、errors（错误信息）的对象
+ * @param args - Raw argument array
+ * @param argDefs - Argument definition array
+ * @returns Object containing parsed (parsed args), positional (positional args), errors (error messages)
  *
- * 支持的格式：
+ * Supported formats:
  * - --name value
  * - --name=value
- * - -n value（短名称）
- * - --boolean（布尔值 true）
- * - --boolean false（显式布尔值）
+ * - -n value (short name)
+ * - --boolean (boolean true)
+ * - --boolean false (explicit boolean)
  */
 export function parseArgs(
 	args: string[],
@@ -172,7 +172,7 @@ export function parseArgs(
 	const errors: string[] = [];
 	const positional: string[] = [];
 
-	// 初始化默认值
+	// Initialize default values
 	for (const def of argDefs) {
 		if (def.default !== undefined) {
 			if (def.type === 'number') {
@@ -187,73 +187,73 @@ export function parseArgs(
 	while (i < args.length) {
 		const arg = args[i];
 
-		// 帮助参数
+		// Help flag
 		if (arg === '-h' || arg === '--help') {
 			parsed['__help__'] = true;
 			i++;
 			continue;
 		}
 
-		// 位置参数
+		// Positional argument
 		if (!arg.startsWith('-')) {
 			positional.push(arg);
 			i++;
 			continue;
 		}
 
-		// 解析命名参数
+		// Parse named argument
 		let argName = arg.replace(/^-+/, '');
 		let value: string | undefined;
 
-		// 处理 --key=value 格式
+		// Handle --key=value format
 		if (argName.includes('=')) {
 			const parts = argName.split('=');
 			argName = parts[0];
 			value = parts.slice(1).join('=');
 		}
 
-		// 查找参数定义
+		// Look up argument definition
 		const def = argDefs.find((d) => d.name === argName || d.short === argName);
 		if (!def) {
-			errors.push(`未知选项: ${arg}`);
+			errors.push(`Unknown option: ${arg}`);
 			i++;
 			continue;
 		}
 
-		// 布尔类型
+		// Boolean type
 		if (def.type === 'boolean') {
-			// 检查下一个参数是否是布尔值（如 --resolved false）
+			// Check if next argument is a boolean value (e.g. --resolved false)
 			const nextArg = args[i + 1];
 			if (nextArg !== undefined && (nextArg === 'false' || nextArg === 'true')) {
 				parsed[def.name] = nextArg === 'true';
 				i += 2;
 				continue;
 			}
-			// 检查是否使用 --key=value 格式
+			// Check if --key=value format is used
 			if (value !== undefined) {
 				parsed[def.name] = value === 'true';
 				i++;
 				continue;
 			}
-			// 默认为 true
+			// Default to true
 			parsed[def.name] = true;
 			i++;
 			continue;
 		}
 
-		// 获取值
+		// Get value
 		if (value === undefined) {
 			i++;
 			if (i >= args.length) {
-				// 如果允许空值，则使用空字符串
+				// If empty values are allowed, use empty string
 				if (def.allowEmpty) {
 					parsed[def.name] = '';
 					continue;
 				}
-				errors.push(`选项缺少值: ${arg}`);
+				errors.push(`Option missing value: ${arg}`);
 				break;
 			}
-			// 如果下一个参数是选项标志且允许空值，则使用空字符串
+			// If next argument is a flag and empty values are allowed, use empty string
 			if (def.allowEmpty && args[i].startsWith('-')) {
 				parsed[def.name] = '';
 				continue;
@@ -261,11 +261,11 @@ export function parseArgs(
 			value = args[i];
 		}
 
-		// 类型转换
+		// Type conversion
 		if (def.type === 'number') {
 			const num = Number(value);
 			if (isNaN(num)) {
-				errors.push(`无效的数字 ${arg}: ${value}`);
+				errors.push(`Invalid number ${arg}: ${value}`);
 				i++;
 				continue;
 			}
@@ -277,10 +277,10 @@ export function parseArgs(
 		i++;
 	}
 
-	// 检查必需参数
+	// Check required arguments
 	for (const def of argDefs) {
 		if (def.required && parsed[def.name] === undefined && parsed[def.name] !== false) {
-			errors.push(`缺少必需选项: --${def.name}`);
+			errors.push(`Missing required option: --${def.name}`);
 		}
 	}
 
@@ -288,15 +288,15 @@ export function parseArgs(
 }
 
 /**
- * createCommandHandler: 创建 CLI 命令处理器
+ * createCommandHandler: Create a CLI command handler
  *
- * @param config - 命令配置对象
- * @returns 命令处理器函数
+ * @param config - Command configuration object
+ * @returns Command handler function
  *
- * 注意事项：
- * - 自动解析参数并检查必需参数
- * - 错误时返回包含 error 的 CommandResult
- * - 成功时返回包含 data 的 CommandResult
+ * Notes:
+ * - Automatically parses arguments and checks required args
+ * - On error, returns CommandResult with error
+ * - On success, returns CommandResult with data
  */
 export function createCommandHandler(config: CommandConfig): CommandHandler {
 	return async (args: string[]): Promise<CommandResult> => {
@@ -321,10 +321,10 @@ export function createCommandHandler(config: CommandConfig): CommandHandler {
 }
 
 /**
- * convertToCliAction: 转换命令配置为 CLI 操作
+ * convertToCliAction: Convert command config to CLI action
  *
- * @param config - 命令配置对象
- * @returns CLI 操作对象
+ * @param config - Command configuration object
+ * @returns CLI action object
  */
 export function convertToCliAction(config: CommandConfig): CliAction {
 	return {
@@ -337,10 +337,10 @@ export function convertToCliAction(config: CommandConfig): CliAction {
 }
 
 /**
- * generateCommandMap: 生成命令映射
+ * generateCommandMap: Generate command map
  *
- * @param commands - 命令配置对象映射
- * @returns CLI 操作映射
+ * @param commands - Command config object map
+ * @returns CLI action map
  */
 export function generateCommandMap(
 	commands: Record<string, CommandConfig>
@@ -351,11 +351,11 @@ export function generateCommandMap(
 }
 
 /**
- * formatOutput: 格式化输出
+ * formatOutput: Format output
  *
- * @param data - 要格式化的数据
- * @param format - 输出格式（text/json），默认为全局设置或 text
- * @returns 格式化后的字符串
+ * @param data - Data to format
+ * @param format - Output format (text/json), defaults to global setting or text
+ * @returns Formatted string
  */
 export function formatOutput(data: any, format?: 'text' | 'json'): string {
 	const fmt = format || getOutputFormat();
@@ -368,7 +368,7 @@ export function formatOutput(data: any, format?: 'text' | 'json'): string {
 	}
 
 	if (Array.isArray(data)) {
-		if (data.length === 0) return '(空)';
+		if (data.length === 0) return '(empty)';
 		const lines: string[] = [];
 		data.forEach((item, idx) => {
 			if (typeof item === 'object' && item !== null) {
@@ -392,16 +392,16 @@ export function formatOutput(data: any, format?: 'text' | 'json'): string {
 }
 
 /**
- * formatObject: 格式化对象为文本
+ * formatObject: Format object as text
  *
- * @param obj - 要格式化的对象
- * @param indent - 缩进级别
- * @param isLast - 是否为最后一个元素
- * @returns 格式化后的文本
+ * @param obj - Object to format
+ * @param indent - Indentation level
+ * @param isLast - Whether this is the last element
+ * @returns Formatted text
  */
 function formatObject(obj: any, indent = 0): string {
 	if (obj === null || obj === undefined) {
-		return '(无)';
+		return '(none)';
 	}
 
 	if (typeof obj !== 'object') {
@@ -413,7 +413,7 @@ function formatObject(obj: any, indent = 0): string {
 
 	if (Array.isArray(obj)) {
 		if (obj.length === 0) {
-			return '(空)';
+			return '(empty)';
 		}
 		obj.forEach((item, idx) => {
 			if (typeof item === 'object' && item !== null) {
@@ -432,7 +432,7 @@ function formatObject(obj: any, indent = 0): string {
 			if (typeof value === 'object' && value !== null) {
 				if (Array.isArray(value)) {
 					if (value.length === 0) {
-						lines.push(`${prefix}${key}: (空)`);
+						lines.push(`${prefix}${key}: (empty)`);
 					} else {
 						lines.push(`${prefix}${key}:`);
 						lines.push(formatObject(value, indent + 1));
@@ -451,16 +451,16 @@ function formatObject(obj: any, indent = 0): string {
 }
 
 /**
- * outputResult: 输出结果并退出进程
+ * outputResult: Output result and exit process
  *
- * @param result - CommandResult 对象
- * @param exitCode - 退出码，默认 0
- * @param forceFormat - 强制输出格式（可选，覆盖全局设置）
+ * @param result - CommandResult object
+ * @param exitCode - Exit code, default 0
+ * @param forceFormat - Force output format (optional, overrides global setting)
  *
- * 注意事项：
- * - 错误输出到 console.error
- * - 成功时根据全局设置输出 JSON 或文本格式
- * - 使用 process.exit 退出进程
+ * Notes:
+ * - Errors go to console.error
+ * - On success, outputs JSON or text format based on global setting
+ * - Exits process via process.exit
  */
 export function outputResult(result: CommandResult, exitCode = 0, forceFormat?: 'text' | 'json'): void {
 	const format = forceFormat || getOutputFormat();
@@ -481,14 +481,14 @@ export function outputResult(result: CommandResult, exitCode = 0, forceFormat?: 
 }
 
 /**
- * generateHelp: 生成帮助文本
+ * generateHelp: Generate help text
  *
- * @param module - CLI 模块对象
- * @param actionName - 可选的操作名称
- * @returns 格式化的帮助文本
+ * @param module - CLI module object
+ * @param actionName - Optional action name
+ * @returns Formatted help text
  *
- * 如果指定 actionName，返回该操作的详细帮助
- * 否则返回模块的总体帮助
+ * If actionName is specified, returns detailed help for that action.
+ * Otherwise returns the module's general help.
  */
 export function generateHelp(module: CliModule, actionName?: string): string {
 	const lines: string[] = [];
@@ -499,38 +499,38 @@ export function generateHelp(module: CliModule, actionName?: string): string {
 		lines.push('');
 		lines.push(action.description);
 		lines.push('');
-		lines.push('用法:');
+		lines.push('Usage:');
 		lines.push(`  affine-cli ${module.name} ${action.usage}`);
 		lines.push('');
 
 		if (action.args && action.args.length > 0) {
-			lines.push('选项:');
+			lines.push('Options:');
 			for (const arg of action.args) {
-				const required = arg.required ? '(必需)' : '(可选)';
+				const required = arg.required ? '(required)' : '(optional)';
 				const short = arg.short ? `-${arg.short}, ` : '    ';
-				const defaultVal = arg.default !== undefined ? ` [默认: ${arg.default}]` : '';
+				const defaultVal = arg.default !== undefined ? ` [default: ${arg.default}]` : '';
 				lines.push(
-					`  ${short}--${arg.name} <值>  ${arg.description} ${required}${defaultVal}`
+					`  ${short}--${arg.name} <value>  ${arg.description} ${required}${defaultVal}`
 				);
 			}
 			lines.push('');
 		}
 
-		lines.push('示例:');
+		lines.push('Examples:');
 		lines.push(`  affine-cli ${module.name} ${action.name} --help`);
 	} else {
 		lines.push(`${module.name} - ${module.description}`);
 		lines.push('');
-		lines.push('用法:');
-		lines.push(`  affine-cli ${module.name} <操作> [选项]`);
+		lines.push('Usage:');
+		lines.push(`  affine-cli ${module.name} <action> [options]`);
 		lines.push('');
-		lines.push('操作:');
+		lines.push('Actions:');
 
 		for (const [name, action] of Object.entries(module.actions)) {
 			lines.push(`  ${name.padEnd(16)} ${action.description}`);
 		}
 		lines.push('');
-		lines.push(`运行 'affine-cli ${module.name} <操作> --help' 查看特定操作的详细信息`);
+		lines.push(`Run 'affine-cli ${module.name} <action> --help' for details on a specific action`);
 	}
 
 	return lines.join('\n');

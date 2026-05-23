@@ -1,23 +1,23 @@
 /**
- * 模块名称：wsClient.ts
- * WebSocket 客户端模块
+ * Module: wsClient.ts
+ * WebSocket client module
  *
- * 功能描述：
- * - 提供与 Affine WebSocket 服务交互的功能
- * - 用于读取和写入 Y.js CRDT 状态
- * - 支持文档的加载、更新、删除操作
- * - 支持工作区元数据提取（页面信息、标签选项）
+ * Description:
+ * - Provides functionality for interacting with Affine WebSocket service
+ * - Used for reading and writing Y.js CRDT state
+ * - Supports document load, update, and delete operations
+ * - Supports workspace metadata extraction (page info, tag options)
  *
- * 导出的函数：
- * - wsUrlFromGraphQLEndpoint: 从 GraphQL URL 推导 WebSocket URL
- * - createWorkspaceSocket: 连接工作区 WebSocket
- * - joinWorkspace: 加入工作区
- * - loadDoc: 加载文档快照
- * - pushDocUpdate: 推送文档更新
- * - deleteDoc: 删除文档
- * - extractWorkspacePages: 提取页面元数据
- * - extractTagNames: 提取标签名称
- * - getWorkspaceDocs: 获取工作区文档信息
+ * Exported functions:
+ * - wsUrlFromGraphQLEndpoint: Derive WebSocket URL from GraphQL URL
+ * - createWorkspaceSocket: Connect to workspace WebSocket
+ * - joinWorkspace: Join workspace
+ * - loadDoc: Load document snapshot
+ * - pushDocUpdate: Push document update
+ * - deleteDoc: Delete document
+ * - extractWorkspacePages: Extract page metadata
+ * - extractTagNames: Extract tag names
+ * - getWorkspaceDocs: Get workspace document info
  */
 
 import { io, Socket } from 'socket.io-client';
@@ -43,15 +43,15 @@ export function closeWorkspaceSocket() {
 }
 
 /**
- * wsUrlFromGraphQLEndpoint: 从 GraphQL 端点 URL 推导 WebSocket URL
+ * wsUrlFromGraphQLEndpoint: Derive WebSocket URL from GraphQL endpoint URL
  *
- * @param endpoint - GraphQL 端点 URL（如 https://app.affine.pro/graphql）
- * @returns WebSocket URL（如 wss://app.affine.pro）
+ * @param endpoint - GraphQL endpoint URL (e.g. https://app.affine.pro/graphql)
+ * @returns WebSocket URL (e.g. wss://app.affine.pro)
  *
- * 转换规则：
+ * Conversion rules:
  * - https:// → wss://
  * - http:// → ws://
- * - 移除末尾的 /graphql
+ * - Remove trailing /graphql
  */
 export function wsUrlFromGraphQLEndpoint(endpoint: string): string {
 	return endpoint
@@ -61,18 +61,18 @@ export function wsUrlFromGraphQLEndpoint(endpoint: string): string {
 }
 
 /**
- * createWorkspaceSocket: 连接工作区 WebSocket
+ * createWorkspaceSocket: Connect to workspace WebSocket
  *
  * @param wsUrl - WebSocket URL
- * @param cookie - 认证 Cookie（可选）
- * @param bearer - Bearer Token（可选）
- * @returns Socket.io 连接对象
- * @throws 连接超时或连接失败
+ * @param cookie - Auth cookie (optional)
+ * @param bearer - Bearer token (optional)
+ * @returns Socket.io connection object
+ * @throws Connection timeout or connection failure
  *
- * 注意事项：
- * - 使用 websocket 传输
- * - 默认超时 10 秒
- * - 支持自定义认证头
+ * Notes:
+ * - Uses websocket transport
+ * - Default timeout 10 seconds
+ * - Supports custom auth headers
  */
 export async function createWorkspaceSocket(): Promise<Socket> {
 	if (_sharedSocket && _sharedSocket.connected) {
@@ -112,15 +112,15 @@ export async function createWorkspaceSocket(): Promise<Socket> {
 		socket.on('connect', onConnect);
 		socket.on('connect_error', onError);
 
-		// 如果配置了超时但未连接，socket.io-client 会自动触发 connect_error
-		// 超时错误信息会是 "timeout"
+		// If timeout configured but not connected, socket.io-client auto-triggers connect_error
+		// Timeout error message will be "timeout"
 		setTimeout(() => {
 			if (!socket.connected) {
 				socket.off('connect', onConnect);
 				socket.off('connect_error', onError);
 				socket.disconnect();
 				_sharedSocketPromise = null;
-				reject(new Error(`WebSocket 连接超时 (${WS_CONNECT_TIMEOUT_MS}ms)`));
+				reject(new Error(`WebSocket connection timeout (${WS_CONNECT_TIMEOUT_MS}ms)`));
 			}
 		}, WS_CONNECT_TIMEOUT_MS + 1000);
 	});
@@ -134,12 +134,12 @@ export async function createWorkspaceSocket(): Promise<Socket> {
 }
 
 /**
- * joinWorkspace: 加入工作区
+ * joinWorkspace: Join workspace
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @returns 加入成功时 resolve，超时或失败时 reject
- * @throws 加入工作区超时
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @returns Resolves on success, rejects on timeout or failure
+ * @throws Join workspace timeout
  */
 export async function joinWorkspace(socket: Socket, workspaceId: string) {
 	if (_joinedWorkspaces.has(workspaceId)) return;
@@ -151,30 +151,30 @@ export async function joinWorkspace(socket: Socket, workspaceId: string) {
 		});
 
 		if (ack?.error) {
-			throw new Error(ack.error.message || '加入工作区失败');
+			throw new Error(ack.error.message || 'Failed to join workspace');
 		}
 		_joinedWorkspaces.add(workspaceId);
 	} catch (err: any) {
 		if (err.message?.includes('timeout')) {
-			throw new Error(`加入工作区超时 (${WS_ACK_TIMEOUT_MS}ms)`);
+			throw new Error(`Join workspace timeout (${WS_ACK_TIMEOUT_MS}ms)`);
 		}
 		throw err;
 	}
 }
 
 /**
- * loadDoc: 加载文档快照
+ * loadDoc: Load document snapshot
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @returns 包含 missing（Base64 编码的 Y.js 更新数据）或 state 的对象
- * @throws 加载文档超时
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @returns Object containing missing (Base64-encoded Y.js update) or state
+ * @throws Load document timeout
  *
- * 返回对象：
- * - missing: Base64 编码的 Y.js 更新数据（新增内容）
- * - state: Base64 编码的完整 Y.js 状态
- * - timestamp: 更新时间戳
+ * Return object:
+ * - missing: Base64-encoded Y.js update data (new content)
+ * - state: Base64-encoded full Y.js state
+ * - timestamp: Update timestamp
  */
 export async function loadDoc(
 	socket: Socket,
@@ -192,27 +192,27 @@ export async function loadDoc(
 			if (ack.error.name === 'DOC_NOT_FOUND') {
 				return {};
 			}
-			throw new Error(ack.error.message || '加载文档失败');
+			throw new Error(ack.error.message || 'Failed to load document');
 		}
 
 		return ack?.data || {};
 	} catch (err: any) {
 		if (err.message?.includes('timeout')) {
-			throw new Error(`加载文档超时 (${WS_ACK_TIMEOUT_MS}ms)`);
+			throw new Error(`Load document timeout (${WS_ACK_TIMEOUT_MS}ms)`);
 		}
 		throw err;
 	}
 }
 
 /**
- * pushDocUpdate: 推送文档更新
+ * pushDocUpdate: Push document update
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @param updateBase64 - Base64 编码的 Y.js 更新数据
- * @returns 更新时间戳
- * @throws 推送更新超时
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @param updateBase64 - Base64-encoded Y.js update data
+ * @returns Update timestamp
+ * @throws Push update timeout
  */
 export async function pushDocUpdate(
 	socket: Socket,
@@ -229,40 +229,40 @@ export async function pushDocUpdate(
 		});
 
 		if (ack?.error) {
-			throw new Error(ack.error.message || '推送更新失败');
+			throw new Error(ack.error.message || 'Failed to push update');
 		}
 
 		return ack?.data?.timestamp || Date.now();
 	} catch (err: any) {
 		if (err.message?.includes('timeout')) {
-			throw new Error(`推送更新超时 (${WS_ACK_TIMEOUT_MS}ms)`);
+			throw new Error(`Push update timeout (${WS_ACK_TIMEOUT_MS}ms)`);
 		}
 		throw err;
 	}
 }
 
 /**
- * deleteDoc: 删除文档
+ * deleteDoc: Delete document
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
  *
- * 注意事项：
- * - 这是单向操作，不等待响应
+ * Notes:
+ * - This is a one-way operation, does not wait for response
  */
 export function deleteDoc(socket: Socket, workspaceId: string, docId: string): void {
 	socket.emit('space:delete-doc', { spaceType: 'workspace', spaceId: workspaceId, docId });
 }
 
 /**
- * extractWorkspacePages: 从 Y.js 工作区文档中提取页面元数据
+ * extractWorkspacePages: Extract page metadata from Y.js workspace document
  *
- * @param wsDoc - Y.Doc 工作区文档
- * @returns 页面数组，包含 id、title、tagsArray、createDate、updateDate
+ * @param wsDoc - Y.Doc workspace document
+ * @returns Page array with id, title, tagsArray, createDate, updateDate
  *
- * 注意事项：
- * - 从 meta.pages 中提取页面信息
+ * Notes:
+ * - Extracts page info from meta.pages
  */
 export function extractWorkspacePages(wsDoc: Y.Doc) {
 	const meta = wsDoc.getMap('meta');
@@ -278,15 +278,15 @@ export function extractWorkspacePages(wsDoc: Y.Doc) {
 }
 
 /**
- * extractTagNames: 从 Y.Array 中提取标签名称数组
+ * extractTagNames: Extract tag name array from Y.Array
  *
- * @param tagsArray - 标签 ID 的 Y.Array
- * @param tagOptions - 标签选项数组（id 到 value 的映射）
- * @returns 标签名称数组
+ * @param tagsArray - Y.Array of tag IDs
+ * @param tagOptions - Tag options array (id-to-value mapping)
+ * @returns Tag name array
  *
- * 注意事项：
- * - 使用 tagOptions 将标签 ID 转换为名称
- * - 只返回能找到对应名称的标签
+ * Notes:
+ * - Converts tag IDs to names using tagOptions
+ * - Only returns tags with matching names
  */
 export function extractTagNames(
 	tagsArray: any,
@@ -310,18 +310,18 @@ export function extractTagNames(
 }
 
 /**
- * getWorkspaceDocs: 获取工作区文档信息
+ * getWorkspaceDocs: Get workspace document info
  *
- * 功能描述：
- * - 通过 WebSocket 加载工作区文档
- * - 提取所有页面的标题和标签信息
- * - 返回 Map<docId, { title, tags, createDate, updateDate }>
+ * Description:
+ * - Loads workspace document via WebSocket
+ * - Extracts title and tag info for all pages
+ * - Returns Map<docId, { title, tags, createDate, updateDate }>
  *
  * @param wsUrl - WebSocket URL
- * @param workspaceId - 工作区 ID
- * @param cookie - 认证 Cookie（可选）
- * @param bearer - Bearer Token（可选）
- * @returns 文档信息 Map
+ * @param workspaceId - Workspace ID
+ * @param cookie - Auth cookie (optional)
+ * @param bearer - Bearer token (optional)
+ * @returns Document info Map
  */
 export async function getWorkspaceDocs(workspaceId: string) {
 	const socket = await createWorkspaceSocket();
@@ -354,17 +354,17 @@ export async function getWorkspaceDocs(workspaceId: string) {
 }
 
 /**
- * fetchYDoc: 加载文档快照并初始化 Y.Doc
+ * fetchYDoc: Load document snapshot and initialize Y.Doc
  *
- * 功能描述：
- * - 从服务器加载指定文档的快照数据
- * - 创建并初始化 Y.Doc 实例
- * - 计算并返回初始的状态向量，用于后续增量更新
+ * Description:
+ * - Loads specified document snapshot data from server
+ * - Creates and initializes Y.Doc instance
+ * - Computes and returns initial state vector for subsequent incremental updates
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @returns 包含 Y.Doc 实例 (doc)、是否已存在快照 (exists)、以及初始的状态向量 (prevSV)
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @returns Contains Y.Doc instance (doc), whether snapshot exists (exists), and initial state vector (prevSV)
  */
 export async function fetchYDoc(
 	socket: Socket,
@@ -382,18 +382,18 @@ export async function fetchYDoc(
 }
 
 /**
- * updateYDoc: 推送 Y.Doc 的更新到服务器
+ * updateYDoc: Push Y.Doc updates to server
  *
- * 功能描述：
- * - 根据前一个状态向量 (prevSV) 计算 Y.Doc 的增量更新
- * - 将增量更新转换为 Base64 格式并推送到服务器
+ * Description:
+ * - Computes Y.Doc incremental update based on previous state vector (prevSV)
+ * - Converts incremental update to Base64 format and pushes to server
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @param doc - Y.Doc 实例
- * @param prevSV - 前一个状态向量，用于计算增量
- * @returns 更新时间戳
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @param doc - Y.Doc instance
+ * @param prevSV - Previous state vector for computing delta
+ * @returns Update timestamp
  */
 export async function updateYDoc(
 	socket: Socket,
@@ -407,15 +407,15 @@ export async function updateYDoc(
 }
 
 /**
- * getSpecialWorkspaceDocId: 生成工作区特殊文档 ID
+ * getSpecialWorkspaceDocId: Generate special workspace document ID
  *
- * 功能描述：
- * - Affine 使用特殊的文档 ID 格式来存储工作区的附加数据
- * - 格式：db${workspaceId}${tableName}
+ * Description:
+ * - Affine uses a special document ID format to store workspace additional data
+ * - Format: db${workspaceId}${tableName}
  *
- * @param workspaceId - 工作区 ID
- * @param tableName - 表名（如 'folders'）
- * @returns 特殊文档 ID 字符串
+ * @param workspaceId - Workspace ID
+ * @param tableName - Table name (e.g. 'folders')
+ * @returns Special document ID string
  */
 export function getSpecialWorkspaceDocId(workspaceId: string, tableName: string): string {
 	return `db$${workspaceId}$${tableName}`;

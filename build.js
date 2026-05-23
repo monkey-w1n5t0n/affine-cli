@@ -1,11 +1,11 @@
 /**
- * 脚本名称：build.js
- * 构建脚本
+ * build.js
+ * Build script
  *
- * 功能描述：
- * 1. 清除 dist 目录
- * 2. 使用 esbuild 打包为单个文件
- * 3. 写入版本号
+ * Steps:
+ * 1. Clean dist directory
+ * 2. Bundle with esbuild into a single file
+ * 3. Inject version number
  */
 
 import * as esbuild from 'esbuild';
@@ -14,26 +14,26 @@ import { execSync } from 'node:child_process';
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
 
-// 1. 清除 dist 目录
-console.log('🧹 清除 dist 目录...');
+// 1. Clean dist directory
+console.log('🧹 Cleaning dist directory...');
 try {
 	rmSync('dist', { recursive: true, force: true });
 } catch {}
 
-// 2. 创建输出目录
+// 2. Create output directory
 mkdirSync('dist', { recursive: true });
 
-// 3. 类型检查
-console.log('🔍 类型检查...');
+// 3. Type check
+console.log('🔍 Type checking...');
 try {
 	execSync('tsc --noEmit -p tsconfig.json', { stdio: 'inherit' });
 } catch (e) {
-	console.log('❌ 类型检查失败，终止打包');
+	console.log('❌ Type check failed, aborting build');
 	process.exit(1);
 }
 
-// 4. 使用 esbuild 打包
-console.log('📦 打包为单文件...');
+// 4. Bundle with esbuild
+console.log('📦 Bundling...');
 await esbuild.build({
 	entryPoints: ['src/index.ts'],
 	bundle: true,
@@ -46,8 +46,8 @@ await esbuild.build({
 	external: ['socket.io-client', 'yjs', 'form-data', 'fractional-indexing', 'markdown-it', 'nanoid', 'node-fetch', 'undici']
 });
 
-// 4. 写入版本号
-console.log('🏷️ 写入版本号...');
+// 5. Inject version number
+console.log('🏷️ Injecting version number...');
 const version = pkg.version;
 const content = readFileSync('dist/index.js', 'utf-8').replace(
 	/%%VERSION%%/g,
@@ -55,4 +55,4 @@ const content = readFileSync('dist/index.js', 'utf-8').replace(
 );
 writeFileSync('dist/index.js', content);
 
-console.log(`✅ 构建完成，版本: ${version}`);
+console.log(`✅ Build complete, version: ${version}`);

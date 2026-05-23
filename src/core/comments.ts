@@ -1,6 +1,6 @@
 /**
- * 评论核心模块
- * 处理评论的增删改查、解决等操作
+ * Comments core module
+ * Handles comment CRUD, resolve, and other operations
  */
 
 import { createGraphQLClient } from '../utils/graphqlClient.js';
@@ -10,20 +10,20 @@ import { generateId } from '../utils/misc.js';
 import * as Y from 'yjs';
 
 /**
- * listCommentsHandler: 列出文档评论
+ * listCommentsHandler: List document comments
  *
- * 功能描述：
- * - 通过 GraphQL API 获取指定文档的评论列表
- * - 支持分页、偏移和游标
- * - 支持返回完整数据或简化数据
+ * Description:
+ * - Fetches comment list for a specified document via GraphQL API
+ * - Supports pagination, offset, and cursor
+ * - Supports returning full data or simplified data
  *
- * @param params.workspaceId - 工作区 ID，默认使用配置中的工作区
- * @param params.docId - 文档 ID（必需）
- * @param params.first - 返回数量限制
- * @param params.offset - 偏移量
- * @param params.after - 游标
- * @param params.full - 是否返回完整评论数据，默认 false
- * @returns 评论数组或完整评论对象
+ * @param params.workspaceId - Workspace ID, defaults to configured workspace
+ * @param params.docId - Document ID (required)
+ * @param params.first - Return count limit
+ * @param params.offset - Offset
+ * @param params.after - Cursor
+ * @param params.full - Whether to return full comment data, default false
+ * @returns Comment array or full comment object
  */
 export async function listCommentsHandler(params: {
 	workspaceId?: string;
@@ -38,7 +38,7 @@ export async function listCommentsHandler(params: {
 
 	const { docId, first, offset, after } = params;
 
-	// 完整数据查询
+	// Full data query
 	const fullQuery = `query ListComments($workspaceId:String!,$docId:String!,$first:Int,$offset:Int,$after:String){ workspace(id:$workspaceId){ comments(docId:$docId, pagination:{first:$first, offset:$offset, after:$after}){ totalCount pageInfo{ hasNextPage endCursor } edges{ cursor node{ id content createdAt updatedAt resolved user{ id name avatarUrl } replies{ id content createdAt updatedAt user{ id name avatarUrl } } } } } } }`;
 
 	const data = await gql.request<{ workspace: any }>(fullQuery, {
@@ -49,18 +49,18 @@ export async function listCommentsHandler(params: {
 		after
 	});
 
-	// 如果不是 full 模式，简化返回数据
+	// If not full mode, simplify return data
 	if (!params.full) {
 		const edges = data.workspace.comments.edges;
 		return edges.map((edge: any) => {
 			const node = edge.node;
-			// 从 snapshot.blocks 中提取评论正文
+			// Extract comment body text from snapshot.blocks
 			const commentContent = extractCommentContent(node.content);
 			return {
 				id: node.id,
-				content: commentContent, // 评论正文
-				preview: node.content?.preview || '', // 引用的文档文本
-				title: node.content?.snapshot?.meta?.title || '', // 文档标题
+				content: commentContent, // Comment body text
+				preview: node.content?.preview || '', // Quoted document text
+				title: node.content?.snapshot?.meta?.title || '', // Document title
 				resolved: node.resolved,
 				user: node.user ? { name: node.user.name } : null,
 				createdAt: node.createdAt,
@@ -74,28 +74,28 @@ export async function listCommentsHandler(params: {
 }
 
 /**
- * extractCommentContent: 从评论 content 中提取评论正文
+ * extractCommentContent: Extract comment body text from comment content
  *
- * @param content - 评论的 content 对象
- * @returns 评论正文字符串
+ * @param content - Comment content object
+ * @returns Comment body text string
  */
 function extractCommentContent(content: any): string {
 	if (!content?.snapshot?.blocks) return '';
 	const blocks = content.snapshot.blocks;
-	// 递归查找 paragraph 中的文本
+	// Recursively find text in paragraphs
 	return extractTextFromSnapshotBlock(blocks);
 }
 
 /**
- * extractTextFromSnapshotBlock: 递归从 snapshot block 中提取文本
+ * extractTextFromSnapshotBlock: Recursively extract text from snapshot blocks
  *
- * @param block - snapshot block 对象
- * @returns 提取的文本字符串
+ * @param block - Snapshot block object
+ * @returns Extracted text string
  */
 function extractTextFromSnapshotBlock(block: any): string {
 	if (!block) return '';
 
-	// 如果是段落类型，提取文本
+	// If paragraph type, extract text
 	if (block.flavour === 'affine:paragraph') {
 		const text = block.props?.text;
 		if (text?.delta && Array.isArray(text.delta)) {
@@ -103,7 +103,7 @@ function extractTextFromSnapshotBlock(block: any): string {
 		}
 	}
 
-	// 递归搜索子元素
+	// Recursively search children
 	if (block.children && Array.isArray(block.children)) {
 		for (const child of block.children) {
 			const text = extractTextFromSnapshotBlock(child);
@@ -115,21 +115,21 @@ function extractTextFromSnapshotBlock(block: any): string {
 }
 
 /**
- * createCommentHandler: 创建评论
+ * createCommentHandler: Create a comment
  *
- * 功能描述：
- * - 在指定文档中创建新评论
- * - 支持设置评论内容和引用的文档文本
- * - 会在文档中创建评论标记（如果有 selection 参数）
+ * Description:
+ * - Creates a new comment in the specified document
+ * - Supports setting comment content and quoted document text
+ * - Creates a comment mark in the document (if selection param is provided)
  *
- * @param params.workspaceId - 工作区 ID，默认使用配置中的工作区
- * @param params.docId - 文档 ID（必需）
- * @param params.docTitle - 文档标题（可选，默认从文档获取）
- * @param params.docMode - 文档模式（page/edgeless）
- * @param params.content - 评论内容（必需）
- * @param params.selection - 引用的文档文本（可选）
- * @param params.mentions - 提及的用户（可选）
- * @returns 创建的评论对象
+ * @param params.workspaceId - Workspace ID, defaults to configured workspace
+ * @param params.docId - Document ID (required)
+ * @param params.docTitle - Document title (optional, defaults to document's own title)
+ * @param params.docMode - Document mode (page/edgeless)
+ * @param params.content - Comment content (required)
+ * @param params.selection - Quoted document text (optional)
+ * @param params.mentions - Mentioned users (optional)
+ * @returns Created comment object
  */
 export async function createCommentHandler(params: {
 	workspaceId?: string;
@@ -144,10 +144,10 @@ export async function createCommentHandler(params: {
 	const workspaceId = getWorkspaceId(params.workspaceId);
 
 	if (!params.content) {
-		throw new Error('评论内容不能为空');
+		throw new Error('Comment content cannot be empty');
 	}
 
-	// 获取文档信息
+	// Get document info
 	const docQuery = `query GetDoc($workspaceId: String!, $docId: String!) {
 		workspace(id: $workspaceId) {
 			doc(docId: $docId) {
@@ -163,16 +163,16 @@ export async function createCommentHandler(params: {
 
 	const normalizedDocMode = docMode.toLowerCase() === 'edgeless' ? 'edgeless' : 'page';
 
-	// 生成随机 ID
+	// Generate random IDs
 	const pageId = generateId(12, 'page');
 	const surfaceId = generateId(12, 'surf');
 	const noteId = generateId(12, 'note');
 	const paragraphId = generateId(12, 'para');
 
-	// preview: 如果有 selection 则使用 selection，否则使用文档标题
-	const preview = params.selection || docTitle || '无标题';
+	// preview: use selection if available, otherwise use document title
+	const preview = params.selection || docTitle || 'Untitled';
 
-	// 构建评论内容 - 使用 DocCommentContent 格式
+	// Build comment content - using DocCommentContent format
 	const commentContent = {
 		preview: preview,
 		mode: normalizedDocMode,
@@ -181,7 +181,7 @@ export async function createCommentHandler(params: {
 			type: 'page',
 			meta: {
 				id: pageId,
-				title: docTitle || '无标题',
+				title: docTitle || 'Untitled',
 				createDate: Date.now(),
 				tags: []
 			},
@@ -257,7 +257,7 @@ export async function createCommentHandler(params: {
 		}
 	};
 
-	// 先创建评论
+	// Create the comment first
 	const mutation = `mutation CreateComment($input: CommentCreateInput!){ createComment(input:$input){ id content createdAt updatedAt resolved } }`;
 	const input = {
 		content: commentContent,
@@ -271,12 +271,12 @@ export async function createCommentHandler(params: {
 	const data = await gql.request<{ createComment: any }>(mutation, { input });
 	const comment = data.createComment;
 
-	// 如果有 selection 参数，需要在文档中添加评论标记
+	// If selection param is provided, add comment mark to the document
 	if (params.selection && comment.id) {
 		try {
 			await addCommentMarkToDocument(workspaceId, params.docId, params.selection, comment.id);
 		} catch (err) {
-			console.error('添加评论标记失败:', err);
+			console.error('Failed to add comment mark:', err);
 		}
 	}
 
@@ -284,20 +284,20 @@ export async function createCommentHandler(params: {
 }
 
 /**
- * addCommentMarkToDocument: 在文档的文本中添加评论标记
+ * addCommentMarkToDocument: Add comment mark to document text
  *
- * 功能描述：
- * - 在文档中搜索包含 selection 的文本
- * - 在找到的文本位置添加评论标记
- * - 通过 WebSocket + Yjs 实时更新文档
+ * Description:
+ * - Searches document text for the selection string
+ * - Adds a comment mark at the found text position
+ * - Updates the document in real-time via WebSocket + Yjs
  *
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
  * @param endpoint - GraphQL endpoint
- * @param cookie - 认证 cookie
- * @param bearer - 认证 bearer token
- * @param selection - 要标记的文本
- * @param commentId - 评论 ID
+ * @param cookie - Auth cookie
+ * @param bearer - Auth bearer token
+ * @param selection - Text to mark
+ * @param commentId - Comment ID
  */
 async function addCommentMarkToDocument(
 	workspaceId: string,
@@ -310,10 +310,10 @@ async function addCommentMarkToDocument(
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 获取文档状态
+		// Get document state
 		const snapshot = await loadDoc(socket, workspaceId, docId);
 
-		// 应用状态到 Y.Doc
+		// Apply state to Y.Doc
 		const yDoc = new Y.Doc();
 		if (snapshot.missing) {
 			Y.applyUpdate(yDoc, Buffer.from(snapshot.missing, 'base64'));
@@ -321,12 +321,12 @@ async function addCommentMarkToDocument(
 			Y.applyUpdate(yDoc, Buffer.from(snapshot.state, 'base64'));
 		}
 
-		// 如果既没有 missing 也没有 state，需要重新获取完整状态
+		// If neither missing nor state, need to re-fetch full state
 		if (!snapshot.missing && !snapshot.state) {
 			return;
 		}
 
-		// 查找并标记匹配的文本
+		// Find and mark matching text
 		const blocks = yDoc.getMap('blocks');
 		const markKey = `comment-${commentId}`;
 		let modified = false;
@@ -336,7 +336,7 @@ async function addCommentMarkToDocument(
 
 			// const flavour = block.get('sys:flavour');
 
-			// 检查所有可能的文本属性
+			// Check all possible text properties
 			const textKeys: string[] = [];
 			block.forEach((_: any, key: string) => {
 				if (key.startsWith('prop:text') || key === 'prop:title') {
@@ -350,7 +350,7 @@ async function addCommentMarkToDocument(
 
 				const text = yText.toString();
 				if (text.includes(selection)) {
-					// 在找到的文本位置添加评论标记
+					// Add comment mark at found text position
 					const index = text.indexOf(selection);
 					const commentAttr: any = {};
 					commentAttr[markKey] = true;
@@ -362,7 +362,7 @@ async function addCommentMarkToDocument(
 		}
 
 		if (modified) {
-			// 发送更新到服务器
+			// Send update to server
 			await updateYDoc(socket, workspaceId, docId, yDoc);
 		}
 	} finally {
@@ -370,22 +370,22 @@ async function addCommentMarkToDocument(
 }
 
 /**
- * updateCommentHandler: 更新评论内容
+ * updateCommentHandler: Update comment content
  *
- * 功能描述：
- * - 更新指定评论的内容
- * - 支持字符串或 BlockSuite 节点格式
- * - 如果是字符串，会保留原有 snapshot 结构，只更新文本
+ * Description:
+ * - Updates the content of a specified comment
+ * - Supports string or BlockSuite node format
+ * - If string, preserves existing snapshot structure and only updates text
  *
- * @param params.id - 评论 ID（必需）
- * @param params.content - 新评论内容（必需）
- * @returns 更新结果对象
+ * @param params.id - Comment ID (required)
+ * @param params.content - New comment content (required)
+ * @returns Update result object
  */
 export async function updateCommentHandler(params: { id: string; content: any }): Promise<any> {
 	const gql = await createGraphQLClient();
 	const workspaceId = getWorkspaceId();
 
-	// 获取评论的完整信息
+	// Get full comment info
 	const commentQuery = `query GetComment($workspaceId: String!, $docId: String!, $first: Int) {
 		workspace(id: $workspaceId) {
 			comments(docId: $docId, pagination: { first: $first }) {
@@ -400,7 +400,7 @@ export async function updateCommentHandler(params: { id: string; content: any })
 		}
 	}`;
 
-	// 获取所有文档，找到该评论
+	// Get all documents to find the comment
 	const docsQuery = `query ListDocs($workspaceId: String!, $first: Int) {
 		workspace(id: $workspaceId) {
 			docs(pagination: { first: $first }) {
@@ -437,21 +437,21 @@ export async function updateCommentHandler(params: { id: string; content: any })
 			if (docId) break;
 		}
 	} catch (err) {
-		// 忽略错误
+		// Ignore errors
 	}
 
-	// 将字符串内容转换为 BlockSuite 节点格式
+	// Convert string content to BlockSuite node format
 	let commentContent: any;
 	if (typeof params.content === 'string') {
-		// 保留原有的 snapshot 结构，只更新 paragraph 中的文本
+		// Preserve existing snapshot structure, only update paragraph text
 		commentContent = existingContent ? { ...existingContent } : null;
 
 		if (commentContent?.snapshot?.blocks) {
-			// 找到 paragraph 并更新文本
+			// Find paragraph and update text
 			const blocks = commentContent.snapshot.blocks;
 			updateParagraphText(blocks, params.content);
 		} else {
-			// 创建新的 paragraph 结构
+			// Create new paragraph structure
 			commentContent = {
 				type: 'paragraph',
 				content: [
@@ -474,16 +474,16 @@ export async function updateCommentHandler(params: { id: string; content: any })
 }
 
 /**
- * updateParagraphText: 递归更新 paragraph 块中的文本
+ * updateParagraphText: Recursively update text in paragraph blocks
  *
- * @param block - block 对象
- * @param newText - 新文本内容
- * @returns 是否成功更新
+ * @param block - Block object
+ * @param newText - New text content
+ * @returns Whether update succeeded
  */
 function updateParagraphText(block: any, newText: string): boolean {
 	if (!block) return false;
 
-	// 如果是段落类型，更新文本
+	// If paragraph type, update text
 	if (block.flavour === 'affine:paragraph') {
 		block.props = block.props || {};
 		block.props.text = {
@@ -493,7 +493,7 @@ function updateParagraphText(block: any, newText: string): boolean {
 		return true;
 	}
 
-	// 递归搜索子元素
+	// Recursively search children
 	if (block.children && Array.isArray(block.children)) {
 		for (const child of block.children) {
 			if (updateParagraphText(child, newText)) {
@@ -506,17 +506,17 @@ function updateParagraphText(block: any, newText: string): boolean {
 }
 
 /**
- * deleteCommentHandler: 删除评论
+ * deleteCommentHandler: Delete a comment
  *
- * 功能描述：
- * - 删除指定评论
- * - 如果没有提供 docId，会在工作区文档中自动查找
- * - 删除前会先移除文档中的评论标记
+ * Description:
+ * - Deletes the specified comment
+ * - If docId is not provided, automatically searches workspace documents
+ * - Removes comment marks from the document before deletion
  *
- * @param params.id - 评论 ID（必需）
- * @param params.workspaceId - 工作区 ID（可选，默认使用配置中的工作区）
- * @param params.docId - 文档 ID（可选，自动查找）
- * @returns 删除结果对象
+ * @param params.id - Comment ID (required)
+ * @param params.workspaceId - Workspace ID (optional, defaults to configured workspace)
+ * @param params.docId - Document ID (optional, auto-search)
+ * @returns Deletion result object
  */
 export async function deleteCommentHandler(params: {
 	id: string;
@@ -528,21 +528,21 @@ export async function deleteCommentHandler(params: {
 	const workspaceId = params.workspaceId || getWorkspaceId();
 	let docId: string | null = params.docId || null;
 
-	// 如果没有提供 docId，尝试在工作区的文档中查找该评论
+	// If docId not provided, try to find the comment in workspace documents
 	if (!docId) {
 		docId = await findCommentDocId(gql, workspaceId, params.id);
 	}
 
-	// 如果找到了 docId，先移除文档中的评论标记
+	// If docId found, remove comment marks from document first
 	if (docId) {
 		try {
 			await removeCommentMarkFromDocument(workspaceId, docId, params.id);
 		} catch (err) {
-			console.error('移除评论标记失败:', err);
+			console.error('Failed to remove comment mark:', err);
 		}
 	}
 
-	// 删除评论
+	// Delete the comment
 	const mutation = `mutation DeleteComment($id:String!){ deleteComment(id:$id) }`;
 	const data: any = await gql.request(mutation, {
 		id: params.id
@@ -551,24 +551,24 @@ export async function deleteCommentHandler(params: {
 }
 
 /**
- * findCommentDocId: 在工作区的文档中查找评论所属的文档 ID
+ * findCommentDocId: Find the document ID that a comment belongs to
  *
- * 功能描述：
- * - 遍历工作区的所有文档
- * - 在每个文档的评论中查找指定评论 ID
- * - 返回找到的文档 ID
+ * Description:
+ * - Iterates all documents in the workspace
+ * - Searches for the specified comment ID in each document's comments
+ * - Returns the found document ID
  *
- * @param gql - GraphQL 客户端
- * @param workspaceId - 工作区 ID
- * @param commentId - 评论 ID
- * @returns 文档 ID，未找到返回 null
+ * @param gql - GraphQL client
+ * @param workspaceId - Workspace ID
+ * @param commentId - Comment ID
+ * @returns Document ID, or null if not found
  */
 async function findCommentDocId(
 	gql: any,
 	workspaceId: string,
 	commentId: string
 ): Promise<string | null> {
-	// 获取工作区的文档列表
+	// Get workspace document list
 	const docsQuery = `query ListDocs($workspaceId: String!, $first: Int) {
 		workspace(id: $workspaceId) {
 			docs(pagination: { first: $first }) {
@@ -585,7 +585,7 @@ async function findCommentDocId(
 		const docsData = await gql.request(docsQuery, { workspaceId, first: 100 });
 		const docIds: string[] = docsData.workspace?.docs?.edges?.map((e: any) => e.node.id) || [];
 
-		// 并行在每个文档中查找该评论
+		// Search for the comment in each document in parallel
 		const promises = docIds.map(async (docId: string) => {
 			const commentQuery = `query CheckComment($workspaceId: String!, $docId: String!) {
 				workspace(id: $workspaceId) {
@@ -611,26 +611,26 @@ async function findCommentDocId(
 		const results = await Promise.all(promises);
 		return results.find((id) => id !== null) || null;
 	} catch (err) {
-		// 忽略错误
+		// Ignore errors
 	}
 
 	return null;
 }
 
 /**
- * removeCommentMarkFromDocument: 从文档中移除评论标记
+ * removeCommentMarkFromDocument: Remove comment marks from document
  *
- * 功能描述：
- * - 遍历文档中的所有文本块
- * - 查找并移除指定评论的标记
- * - 通过 WebSocket + Yjs 实时更新文档
+ * Description:
+ * - Iterates all text blocks in the document
+ * - Finds and removes marks for the specified comment
+ * - Updates the document in real-time via WebSocket + Yjs
  *
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
  * @param endpoint - GraphQL endpoint
- * @param cookie - 认证 cookie
- * @param bearer - 认证 bearer token
- * @param commentId - 评论 ID
+ * @param cookie - Auth cookie
+ * @param bearer - Auth bearer token
+ * @param commentId - Comment ID
  */
 async function removeCommentMarkFromDocument(
 	workspaceId: string,
@@ -642,10 +642,10 @@ async function removeCommentMarkFromDocument(
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 获取文档状态
+		// Get document state
 		const snapshot = await loadDoc(socket, workspaceId, docId);
 
-		// 应用状态到 Y.Doc
+		// Apply state to Y.Doc
 		const yDoc = new Y.Doc();
 		if (snapshot.missing) {
 			Y.applyUpdate(yDoc, Buffer.from(snapshot.missing, 'base64'));
@@ -657,7 +657,7 @@ async function removeCommentMarkFromDocument(
 			return;
 		}
 
-		// 查找并移除评论标记
+		// Find and remove comment marks
 		const blocks = yDoc.getMap('blocks');
 		const markKey = `comment-${commentId}`;
 		let modified = false;
@@ -665,7 +665,7 @@ async function removeCommentMarkFromDocument(
 		for (const [_, block] of blocks) {
 			if (!(block instanceof Y.Map)) continue;
 
-			// 检查所有可能的文本属性
+			// Check all possible text properties
 			const textKeys: string[] = [];
 			block.forEach((_: any, key: string) => {
 				if (key.startsWith('prop:text') || key === 'prop:title') {
@@ -677,12 +677,12 @@ async function removeCommentMarkFromDocument(
 				const yText = block.get(key) as Y.Text | undefined;
 				if (!yText || !(yText instanceof Y.Text)) continue;
 
-				// 先获取 delta 的快照
+				// Get delta snapshot first
 				const delta = yText.toDelta();
 				for (let i = 0; i < delta.length; i++) {
 					const d = delta[i];
 					if (d.attributes && markKey in d.attributes) {
-						// 找到评论标记，计算位置
+						// Found comment mark, calculate position
 						let pos = 0;
 						for (let j = 0; j < i; j++) {
 							if (delta[j].insert) {
@@ -694,7 +694,7 @@ async function removeCommentMarkFromDocument(
 						}
 						const len = typeof d.insert === 'string' ? d.insert.length : 1;
 
-						// 移除该评论标记 - 使用 null 清除属性
+						// Remove the comment mark - use null to clear the attribute
 						yText.format(pos, len, { [markKey]: null });
 						modified = true;
 					}
@@ -703,7 +703,7 @@ async function removeCommentMarkFromDocument(
 		}
 
 		if (modified) {
-			// 发送更新到服务器
+			// Send update to server
 			await updateYDoc(socket, workspaceId, docId, yDoc);
 		}
 	} finally {
@@ -711,15 +711,15 @@ async function removeCommentMarkFromDocument(
 }
 
 /**
- * resolveCommentHandler: 解决/取消解决评论
+ * resolveCommentHandler: Resolve/unresolve a comment
  *
- * 功能描述：
- * - 设置评论的解决状态
- * - true 表示已解决，false 表示未解决
+ * Description:
+ * - Sets the resolved state of a comment
+ * - true means resolved, false means unresolved
  *
- * @param params.id - 评论 ID（必需）
- * @param params.resolved - 是否已解决（必需）
- * @returns 操作结果对象
+ * @param params.id - Comment ID (required)
+ * @param params.resolved - Whether resolved (required)
+ * @returns Operation result object
  */
 export async function resolveCommentHandler(params: {
 	id: string;

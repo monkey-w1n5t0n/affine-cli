@@ -1,14 +1,14 @@
 /**
- * 认证核心模块
- * 处理登录、登出、状态查询等认证相关操作
+ * Authentication core module
+ * Handles login, logout, status check, and other auth operations
  *
- * 支持的认证方式：
- * 1. 邮箱/密码登录（自动生成 API Token）
- * 2. API Token 登录（手动获取或粘贴）
+ * Supported authentication methods:
+ * 1. Email/password login (auto-generates API Token)
+ * 2. API Token login (manually obtained or pasted)
  *
- * 配置存储：
- * - 全局配置：~/.affine-cli/affine-cli.env
- * - 本地配置：当前目录 .env
+ * Config storage:
+ * - Global config: ~/.affine-cli/affine-cli.env
+ * - Local config: current directory .env
  */
 
 import * as readline from 'readline';
@@ -26,21 +26,21 @@ import * as path from 'path';
 import * as os from 'os';
 
 /* ============================================================================
- * 交互式输入辅助函数
+ * Interactive input helpers
  * ============================================================================ */
 
 /**
- * 通用交互式输入函数
+ * Generic interactive input function
  *
- * 提示用户输入内容，支持可见和隐藏两种模式
+ * Prompts user for input, supports visible and hidden modes
  *
- * @param prompt - 提示文本
- * @param hidden - 是否隐藏输入（密码模式）
- * @returns 用户输入的字符串
+ * @param prompt - Prompt text
+ * @param hidden - Whether to hide input (password mode)
+ * @returns User input string
  *
  * @example
- * const name = await ask('请输入名称: ');
- * const password = await ask('请输入密码: ', true);
+ * const name = await ask('Enter name: ');
+ * const password = await ask('Enter password: ', true);
  */
 function ask(prompt: string, hidden = false): Promise<string> {
 	if (hidden && process.stdin.isTTY) {
@@ -60,13 +60,13 @@ function ask(prompt: string, hidden = false): Promise<string> {
 }
 
 /**
- * 隐藏输入实现（TTY 模式下的密码输入）
+ * Hidden input implementation (TTY password input)
  *
- * 使用原始模式捕获键盘输入，支持退格和 Ctrl+C 取消
+ * Uses raw mode to capture keyboard input, supports backspace and Ctrl+C to cancel
  *
- * @param prompt - 提示文本
- * @returns 用户输入的字符串
- * @throws 用户按 Ctrl+C 时抛出错误
+ * @param prompt - Prompt text
+ * @returns User input string
+ * @throws Error when user presses Ctrl+C
  */
 function readHidden(prompt: string): Promise<string> {
 	return new Promise((resolve, reject) => {
@@ -83,13 +83,13 @@ function readHidden(prompt: string): Promise<string> {
 					process.stderr.write('\n');
 					resolve(buf.join(''));
 					break;
-				case '\u0003': // Ctrl+C
+				case '': // Ctrl+C
 					cleanup();
 					process.stderr.write('\n');
-					reject(new Error('已取消'));
+					reject(new Error('Cancelled'));
 					break;
-				case '\u007F':
-				case '\b': // 退格
+				case '':
+				case '\b': // Backspace
 					buf.pop();
 					break;
 				default:
@@ -106,20 +106,20 @@ function readHidden(prompt: string): Promise<string> {
 }
 
 /* ============================================================================
- * GraphQL 请求辅助函数
+ * GraphQL request helpers
  * ============================================================================ */
 
 /**
- * 执行 GraphQL 请求（用于登录阶段）
+ * Execute GraphQL request (for login phase)
  *
- * 封装 GraphQL POST 请求，支持 Token 和 Cookie 两种认证方式
+ * Wraps GraphQL POST request, supports Token and Cookie authentication
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param auth - 认证信息 { token?, cookie? }
- * @param query - GraphQL 查询字符串
- * @param variables - 可选的变量对象
- * @returns 解析后的响应数据
- * @throws 网络错误、超时、GraphQL 错误
+ * @param baseUrl - Affine server base URL
+ * @param auth - Auth info { token?, cookie? }
+ * @param query - GraphQL query string
+ * @param variables - Optional variables object
+ * @returns Parsed response data
+ * @throws Network error, timeout, GraphQL error
  */
 async function gql(
 	baseUrl: string,
@@ -140,14 +140,14 @@ async function gql(
 }
 
 /**
- * 检查连接并获取用户信息
+ * Check connection and get user info
  *
- * 通过 GraphQL 查询验证认证是否有效，获取当前用户信息
+ * Validates authentication via GraphQL query and gets current user info
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param auth - 认证信息
- * @returns 用户信息对象 { userName, userEmail, workspaceCount }
- * @throws 认证失败
+ * @param baseUrl - Affine server base URL
+ * @param auth - Auth info
+ * @returns User info object { userName, userEmail, workspaceCount }
+ * @throws Authentication failed
  */
 async function inspectConnection(
 	baseUrl: string,
@@ -162,15 +162,15 @@ async function inspectConnection(
 }
 
 /**
- * 检测并选择工作区
+ * Detect and select workspace
  *
- * 如果指定了首选工作区 ID 则直接使用，否则列出所有工作区供用户选择
+ * If a preferred workspace ID is specified, uses it directly; otherwise lists all workspaces for user to select
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param auth - 认证信息
- * @param preferredWorkspaceId - 首选工作区 ID（可选）
- * @returns 选择的工作区 ID
- * @throws 没有可用工作区或选择无效
+ * @param baseUrl - Affine server base URL
+ * @param auth - Auth info
+ * @param preferredWorkspaceId - Preferred workspace ID (optional)
+ * @returns Selected workspace ID
+ * @throws No available workspaces or invalid selection
  */
 async function detectWorkspace(
 	baseUrl: string,
@@ -178,17 +178,17 @@ async function detectWorkspace(
 	preferredWorkspaceId?: string
 ): Promise<string> {
 	if (preferredWorkspaceId) {
-		console.error(`使用指定的工作区: ${preferredWorkspaceId}`);
+		console.error(`Using specified workspace: ${preferredWorkspaceId}`);
 		return preferredWorkspaceId;
 	}
 
-	console.error('检测工作区...');
+	console.error('Detecting workspace...');
 	const data = await gql(baseUrl, auth, `query {workspaces {id createdAt}}`);
 
 	const workspaces: any[] = data.workspaces;
 	if (workspaces.length === 0) {
-		console.error('  未找到工作区');
-		throw new Error('没有可用工作区，请先创建工作区');
+		console.error('  No workspaces found');
+		throw new Error('No available workspaces, please create one first');
 	}
 
 	const formatWs = (w: any) => {
@@ -197,49 +197,49 @@ async function detectWorkspace(
 	};
 
 	if (workspaces.length === 1) {
-		console.error(`  找到 1 个工作区: ${formatWs(workspaces[0])}`);
-		console.error('  自动选择');
+		console.error(`  Found 1 workspace: ${formatWs(workspaces[0])}`);
+		console.error('  Auto-selected');
 		return workspaces[0].id;
 	}
 
-	console.error(`  找到 ${workspaces.length} 个工作区:`);
+	console.error(`  Found ${workspaces.length} workspaces:`);
 	workspaces.forEach((w, i) => console.error(`    ${i + 1}) ${formatWs(w)}`));
-	const choice = (await ask(`\n选择 [1]: `)) || '1';
+	const choice = (await ask(`\nSelect [1]: `)) || '1';
 	const idx = parseInt(choice, 10) - 1;
 	if (idx < 0 || idx >= workspaces.length) {
-		throw new Error('无效的选择');
+		throw new Error('Invalid selection');
 	}
 	return workspaces[idx].id;
 }
 
 /* ============================================================================
- * 登录处理器
+ * Login handler
  * ============================================================================ */
 
 /**
- * 登录处理器
+ * Login handler
  *
- * 主登录入口，支持多种登录方式：
- * 1. 直接使用 API Token（--token 参数）
- * 2. 交互式选择：邮箱/密码登录或粘贴 Token
+ * Main login entry point, supports multiple login methods:
+ * 1. Direct API Token (--token param)
+ * 2. Interactive selection: email/password login or paste Token
  *
- * 配置保存位置：
- * - --local: 当前目录 .env
- * - 默认: ~/.affine-cli/affine-cli.env
+ * Config save location:
+ * - --local: current directory .env
+ * - Default: ~/.affine-cli/affine-cli.env
  *
- * @param params - 参数对象
- * @param params.url - Affine 服务器 URL（默认 https://app.affine.pro）
- * @param params.token - API Token（可选）
- * @param params.workspaceId - 首选工作区 ID（可选）
- * @param params.local - 是否保存到本地配置
- * @param params.force - 是否强制覆盖现有配置
- * @returns 登录结果 { success, message, baseUrl, workspaceId }
+ * @param params - Parameter object
+ * @param params.url - Affine server URL (default https://app.affine.pro)
+ * @param params.token - API Token (optional)
+ * @param params.workspaceId - Preferred workspace ID (optional)
+ * @param params.local - Whether to save to local config
+ * @param params.force - Whether to force overwrite existing config
+ * @returns Login result { success, message, baseUrl, workspaceId }
  *
  * @example
- * // 使用 Token 登录
+ * // Login with Token
  * await authLoginHandler({ token: 'xxx', workspaceId: 'ws123' });
  *
- * // 交互式登录
+ * // Interactive login
  * await authLoginHandler({});
  */
 export async function authLoginHandler(params: {
@@ -249,7 +249,7 @@ export async function authLoginHandler(params: {
 	local?: boolean;
 	force?: boolean;
 }): Promise<any> {
-	console.error('Affine Skill CLI — 登录\n');
+	console.error('Affine Skill CLI — Login\n');
 
 	const configFile = params.local
 		? path.join(process.cwd(), '.env')
@@ -257,14 +257,14 @@ export async function authLoginHandler(params: {
 
 	const existing = loadConfigFile();
 	if (existing.AFFINE_API_TOKEN && !params.force) {
-		console.error(`现有配置: ${configFile}`);
-		console.error(`  URL:       ${existing.AFFINE_BASE_URL || '(默认)'}`);
-		console.error('  Token:     (已设置)');
-		console.error(`  工作区: ${existing.AFFINE_WORKSPACE_ID || '(无)'}\n`);
-		const overwrite = await ask('是否覆盖? [y/N] ');
+		console.error(`Existing config: ${configFile}`);
+		console.error(`  URL:       ${existing.AFFINE_BASE_URL || '(default)'}`);
+		console.error('  Token:     (set)');
+		console.error(`  Workspace: ${existing.AFFINE_WORKSPACE_ID || '(none)'}\n`);
+		const overwrite = await ask('Overwrite? [y/N] ');
 		if (!/^[yY]$/.test(overwrite)) {
-			console.error('保留现有配置');
-			return { success: false, message: '已取消' };
+			console.error('Keeping existing config');
+			return { success: false, message: 'Cancelled' };
 		}
 		console.error('');
 	}
@@ -276,19 +276,19 @@ export async function authLoginHandler(params: {
 	let result: { token: string; workspaceId: string };
 
 	if (params.token) {
-		console.error('测试提供的 Token...');
+		console.error('Testing provided Token...');
 		try {
 			const info = await inspectConnection(baseUrl, { token: params.token });
-			console.error(`✓ 认证为: ${info.userName} <${info.userEmail}>\n`);
+			console.error(`✓ Authenticated as: ${info.userName} <${info.userEmail}>\n`);
 		} catch (err: any) {
-			throw new Error(`认证失败: ${err.message}`);
+			throw new Error(`Authentication failed: ${err.message}`);
 		}
 		result = {
 			token: params.token,
 			workspaceId: await detectWorkspace(baseUrl, { token: params.token }, params.workspaceId)
 		};
 	} else {
-		const method = await ask('\n登录方式 — [1] 邮箱/密码 (推荐)  [2] 粘贴 API Token: ');
+		const method = await ask('\nLogin method — [1] Email/password (recommended)  [2] Paste API Token: ');
 		if (method === '2') {
 			result = await loginWithToken(baseUrl, params.workspaceId);
 		} else {
@@ -305,52 +305,52 @@ export async function authLoginHandler(params: {
 		params.local
 	);
 
-	console.error(`\n✓ 已保存到 ${configFile}`);
+	console.error(`\n✓ Saved to ${configFile}`);
 	return {
 		success: true,
-		message: '登录成功',
+		message: 'Login successful',
 		baseUrl,
 		workspaceId: result.workspaceId
 	};
 }
 
 /**
- * 邮箱密码登录
+ * Email/password login
  *
- * 使用邮箱和密码登录，自动创建 API Token 供后续使用
+ * Logs in with email and password, auto-creates API Token for subsequent use
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param preferredWorkspaceId - 首选工作区 ID（可选）
- * @returns 登录结果 { token, workspaceId }
- * @throws 登录失败、会话验证失败、Token 创建失败
+ * @param baseUrl - Affine server base URL
+ * @param preferredWorkspaceId - Preferred workspace ID (optional)
+ * @returns Login result { token, workspaceId }
+ * @throws Login failed, session validation failed, Token creation failed
  */
 async function loginWithEmail(
 	baseUrl: string,
 	preferredWorkspaceId?: string
 ): Promise<{ token: string; workspaceId: string }> {
-	const email = await ask('邮箱: ');
-	const password = await ask('密码: ', true);
+	const email = await ask('Email: ');
+	const password = await ask('Password: ', true);
 	if (!email || !password) {
-		throw new Error('邮箱和密码不能为空');
+		throw new Error('Email and password cannot be empty');
 	}
 
-	console.error('正在登录...');
+	console.error('Logging in...');
 	let cookieHeader: string;
 	try {
 		({ cookieHeader } = await loginWithPassword(baseUrl, email, password));
 	} catch (err: any) {
-		throw new Error(`登录失败: ${err.message}`);
+		throw new Error(`Login failed: ${err.message}`);
 	}
 
 	const auth = { cookie: cookieHeader };
 	try {
 		const data = await gql(baseUrl, auth, 'query { currentUser { name email } }');
-		console.error(`✓ 已登录为: ${data.currentUser.name} <${data.currentUser.email}>\n`);
+		console.error(`✓ Logged in as: ${data.currentUser.name} <${data.currentUser.email}>\n`);
 	} catch (err: any) {
-		throw new Error(`会话验证失败: ${err.message}`);
+		throw new Error(`Session validation failed: ${err.message}`);
 	}
 
-	console.error('生成 API Token...');
+	console.error('Generating API Token...');
 	let token: string;
 	try {
 		const data = await gql(
@@ -360,11 +360,11 @@ async function loginWithEmail(
 			{ input: { name: `affine-cli-${new Date().toISOString().slice(0, 10)}` } }
 		);
 		token = data.generateUserAccessToken.token;
-		console.error(`✓ Token 已创建 (名称: ${data.generateUserAccessToken.name})\n`);
+		console.error(`✓ Token created (name: ${data.generateUserAccessToken.name})\n`);
 	} catch (err: any) {
 		throw new Error(
-			`创建 Token 失败: ${err.message}\n` +
-				'你可以在 Affine 设置 → 集成 → MCP Server 中手动创建'
+			`Failed to create Token: ${err.message}\n` +
+				'You can manually create one in Affine Settings → Integrations → MCP Server'
 		);
 	}
 
@@ -373,35 +373,35 @@ async function loginWithEmail(
 }
 
 /**
- * Token 登录
+ * Token login
  *
- * 用户手动获取 API Token 后粘贴登录
+ * User manually obtains API Token and pastes it to login
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param preferredWorkspaceId - 首选工作区 ID（可选）
- * @returns 登录结果 { token, workspaceId }
- * @throws 未提供 Token、认证失败
+ * @param baseUrl - Affine server base URL
+ * @param preferredWorkspaceId - Preferred workspace ID (optional)
+ * @returns Login result { token, workspaceId }
+ * @throws Token not provided, authentication failed
  */
 async function loginWithToken(
 	baseUrl: string,
 	preferredWorkspaceId?: string
 ): Promise<{ token: string; workspaceId: string }> {
-	console.error('\n生成 Token 的方法:');
-	console.error(`  1. 在浏览器中打开 ${baseUrl}/settings`);
-	console.error('  2. 账户设置 → 集成 → MCP Server');
-	console.error('  3. 复制 Personal access token\n');
+	console.error('\nHow to generate a Token:');
+	console.error(`  1. Open ${baseUrl}/settings in your browser`);
+	console.error('  2. Account Settings → Integrations → MCP Server');
+	console.error('  3. Copy Personal access token\n');
 
 	const token = await ask('API Token: ', true);
 	if (!token) {
-		throw new Error('未提供 Token');
+		throw new Error('Token not provided');
 	}
 
-	console.error('测试连接...');
+	console.error('Testing connection...');
 	try {
 		const data = await gql(baseUrl, { token }, 'query { currentUser { name email } }');
-		console.error(`✓ 认证为: ${data.currentUser.name} <${data.currentUser.email}>\n`);
+		console.error(`✓ Authenticated as: ${data.currentUser.name} <${data.currentUser.email}>\n`);
 	} catch (err: any) {
-		throw new Error(`认证失败: ${err.message}`);
+		throw new Error(`Authentication failed: ${err.message}`);
 	}
 
 	const workspaceId = await detectWorkspace(baseUrl, { token }, preferredWorkspaceId);
@@ -409,54 +409,54 @@ async function loginWithToken(
 }
 
 /**
- * 登出处理器
+ * Logout handler
  *
- * 删除配置文件，支持本地和全局配置
+ * Deletes config file, supports local and global config
  *
- * @param params - 参数对象
- * @param params.local - 是否删除本地配置（默认删除全局配置）
- * @returns 登出结果 { success, message }
+ * @param params - Parameter object
+ * @param params.local - Whether to delete local config (deletes global config by default)
+ * @returns Logout result { success, message }
  *
  * @example
- * // 退出全局登录
+ * // Logout globally
  * await authLogoutHandler({});
  *
- * // 退出本地登录
+ * // Logout locally
  * await authLogoutHandler({ local: true });
  */
 export async function authLogoutHandler(params: { local?: boolean }): Promise<any> {
 	const configFile = params.local ? process.cwd() + '/.env' : GLOBAL_CONFIG_FILE;
 	if (fs.existsSync(configFile)) {
 		fs.unlinkSync(configFile);
-		console.error(`已移除 ${configFile}`);
-		return { success: true, message: '已登出' };
+		console.error(`Removed ${configFile}`);
+		return { success: true, message: 'Logged out' };
 	} else {
-		console.error('未找到配置文件');
-		return { success: false, message: '未找到配置文件' };
+		console.error('Config file not found');
+		return { success: false, message: 'Config file not found' };
 	}
 }
 
 /**
- * 状态查询处理器
+ * Status check handler
  *
- * 检查当前登录状态，显示用户信息和配置详情
+ * Checks current login status, displays user info and config details
  *
- * @param params - 参数对象
- * @param params.json - 是否以 JSON 格式输出（默认 false）
- * @returns 状态信息对象，包含配置详情和用户信息
- * @throws 未登录、连接失败
+ * @param params - Parameter object
+ * @param params.json - Whether to output in JSON format (default false)
+ * @returns Status info object, containing config details and user info
+ * @throws Not logged in, connection failed
  *
  * @example
- * // 简单输出
+ * // Simple output
  * await authStatusHandler({});
  *
- * // JSON 输出
+ * // JSON output
  * await authStatusHandler({ json: true });
  */
 export async function authStatusHandler(params: { json?: boolean }): Promise<any> {
 	const config = loadConfigFile();
 	if (!config.AFFINE_API_TOKEN) {
-		throw new Error('未登录。请运行: affine-cli auth login');
+		throw new Error('Not logged in. Please run: affine-cli auth login');
 	}
 
 	try {
@@ -477,12 +477,12 @@ export async function authStatusHandler(params: { json?: boolean }): Promise<any
 			};
 		}
 
-		console.error(`全局配置: ${GLOBAL_CONFIG_FILE}`);
-		console.error(`URL:       ${config.AFFINE_BASE_URL || '(默认)'}`);
+		console.error(`Global config: ${GLOBAL_CONFIG_FILE}`);
+		console.error(`URL:       ${config.AFFINE_BASE_URL || '(default)'}`);
 		console.error(`Token:     ${redactSecret(config.AFFINE_API_TOKEN)}`);
-		console.error(`工作区: ${config.AFFINE_WORKSPACE_ID || '(无)'}\n`);
-		console.error(`用户: ${inspection.userName} <${inspection.userEmail}>`);
-		console.error(`工作区数量: ${inspection.workspaceCount}`);
+		console.error(`Workspace: ${config.AFFINE_WORKSPACE_ID || '(none)'}\n`);
+		console.error(`User: ${inspection.userName} <${inspection.userEmail}>`);
+		console.error(`Workspace count: ${inspection.workspaceCount}`);
 
 		return {
 			success: true,
@@ -491,6 +491,6 @@ export async function authStatusHandler(params: { json?: boolean }): Promise<any
 			workspaceCount: inspection.workspaceCount
 		};
 	} catch (err: any) {
-		throw new Error(`连接失败: ${err.message}`);
+		throw new Error(`Connection failed: ${err.message}`);
 	}
 }

@@ -1,34 +1,34 @@
 /**
- * 模块名称：auth.ts
- * 认证工具模块
+ * Module: auth.ts
+ * Authentication utility module
  *
- * 功能描述：
- * - 提供用户登录和认证功能的基础工具函数
- * - 使用账号密码登录获取认证 Cookie
- * - 处理 Cookie 提取和验证
+ * Description:
+ * - Provides basic utility functions for user login and authentication
+ * - Login with email/password to obtain auth cookie
+ * - Handles cookie extraction and validation
  *
- * 导出的函数：
- * - loginWithPassword: 使用邮箱和密码登录
+ * Exported functions:
+ * - loginWithPassword: Login with email and password
  */
 
 import { fetch } from 'undici';
 
 /**
- * 请求超时时间（毫秒）
+ * Request timeout (ms)
  */
 const AUTH_FETCH_TIMEOUT_MS = 30_000;
 
 /* ============================================================================
- * 辅助函数
+ * Helper functions
  * ============================================================================ */
 
 /**
- * 提取 Cookie 对
+ * Extract cookie pairs
  *
- * 从 Set-Cookie 头数组中提取键值对，组合成 Cookie 字符串
+ * Extract key-value pairs from Set-Cookie header array, combine into cookie string
  *
- * @param setCookies - Set-Cookie 头数组
- * @returns 格式化的 Cookie 字符串（如 "token1=xxx; token2=yyy"）
+ * @param setCookies - Set-Cookie header array
+ * @returns Formatted cookie string (e.g. "token1=xxx; token2=yyy")
  *
  * @example
  * const cookies = ['session=abc123; Path=/', 'user=john; Path=/'];
@@ -44,32 +44,32 @@ function extractCookiePairs(setCookies: string[]): string {
 }
 
 /**
- * 检查是否包含 CR/LF 字符（防止头部注入）
+ * Check for CR/LF characters (prevent header injection)
  *
- * @param value - 要检查的值
- * @param label - 标签名称（用于错误信息）
- * @throws 如果值包含 CR/LF 字符则抛出错误
+ * @param value - Value to check
+ * @param label - Label name (for error messages)
+ * @throws Throws error if value contains CR/LF characters
  */
 function assertNoCRLF(value: string, label: string): void {
 	if (/[\r\n]/.test(value)) {
-		throw new Error(`${label} 包含非法的 CR/LF 字符`);
+		throw new Error(`${label} contains illegal CR/LF characters`);
 	}
 }
 
 /* ============================================================================
- * 公共接口
+ * Public interface
  * ============================================================================ */
 
 /**
- * 使用账号密码登录
+ * Login with email and password
  *
- * 向 Affine 服务器发送登录请求，获取认证 Cookie
+ * Send login request to Affine server, obtain auth cookie
  *
- * @param baseUrl - Affine 服务器基础 URL
- * @param email - 用户邮箱
- * @param password - 用户密码
- * @returns 登录结果对象 { cookieHeader }
- * @throws 登录失败、请求超时、未收到 Cookie
+ * @param baseUrl - Affine server base URL
+ * @param email - User email
+ * @param password - User password
+ * @returns Login result object { cookieHeader }
+ * @throws Login failure, request timeout, no cookie received
  *
  * @example
  * const { cookieHeader } = await loginWithPassword('https://app.affine.pro', 'user@example.com', 'password');
@@ -92,7 +92,7 @@ export async function loginWithPassword(
 		});
 	} catch (err: any) {
 		if (err.name === 'AbortError')
-			throw new Error(`登录请求超时 (${AUTH_FETCH_TIMEOUT_MS / 1000}s)`);
+			throw new Error(`Login request timeout (${AUTH_FETCH_TIMEOUT_MS / 1000}s)`);
 		throw err;
 	} finally {
 		clearTimeout(timer);
@@ -105,7 +105,7 @@ export async function loginWithPassword(
 			.replace(/\s+/g, ' ')
 			.trim();
 		const truncated = sanitized.length > 200 ? sanitized.slice(0, 200) + '...' : sanitized;
-		throw new Error(`登录失败: ${res.status} ${truncated}`);
+		throw new Error(`Login failed: ${res.status} ${truncated}`);
 	}
 
 	const anyHeaders = res.headers as any;
@@ -118,7 +118,7 @@ export async function loginWithPassword(
 	}
 
 	if (!setCookies.length) {
-		throw new Error('登录成功但未收到 Set-Cookie');
+		throw new Error('Login succeeded but no Set-Cookie received');
 	}
 
 	const cookieHeader = extractCookiePairs(setCookies);

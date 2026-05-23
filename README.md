@@ -2,226 +2,226 @@
 
 **[【English】](./README-en.md)** | **[【中文】](./README.md)**
 
-Affine CLI 是一个轻量级的命令行工具，用于管理 Affine 文档、标签、文件夹、收藏夹、文件和数据库。它提供了通过命令行与 Affine（<https://app.affine.pro）API> 交互的简化接口。
+Affine CLI is a lightweight command-line tool for managing Affine documents, tags, folders, collections, files, and databases. It provides a simplified interface for interacting with the Affine (<https://app.affine.pro>) API via the command line.
 
-## 功能特性
+## Features
 
-- **认证**: 使用邮箱/密码或 API 令牌登录
-- **工作区管理**: 列出和管理工作区
-- **文档操作**: 创建、读取、更新、删除、搜索、复制和追加内容
-- **标签管理**: 创建标签、向文档添加/移除标签
-- **文件夹管理**: 在文件夹中组织文档
-- **收藏夹管理**: 创建和管理收藏夹
-- **文件管理**: 上传和管理文件附件
-- **评论管理**: 添加、更新、删除和解决评论
-- **数据库管理**: 创建数据表、管理列和行
+- **Authentication**: Login with email/password or API token
+- **Workspace Management**: List and manage workspaces
+- **Document Operations**: Create, read, update, delete, search, copy, and append content
+- **Tag Management**: Create tags, add/remove tags from documents
+- **Folder Management**: Organize documents in folders
+- **Collection Management**: Create and manage collections
+- **File Management**: Upload and manage file attachments
+- **Comment Management**: Add, update, delete, and resolve comments
+- **Database Management**: Create data tables, manage columns and rows
 
-## 安装
+## Installation
 
-### 本地安装
+### Local Install
 
 ```bash
-# 克隆仓库
+# Clone the repository
 git clone https://github.com/woodcoal/affine-cli.git
 cd affine-cli
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 构建项目
+# Build the project
 npm run build
 ```
 
-### 全局安装（推荐）
+### Global Install (Recommended)
 
 ```bash
-# 从 npm 全局安装（如果已发布）
+# Install globally from npm (if published)
 npm install -g affine-cli
 
-# 安装完成后，可在任意目录使用 affine-cli 命令
+# After installation, the affine-cli command is available from any directory
 ```
 
-## 配置
+## Configuration
 
-在项目目录创建 `.env` 文件，或使用全局配置：
+Create a `.env` file in the project directory, or use global configuration:
 
 ```bash
-# 全局配置: ~/.affine-cli/affine-cli.env
-# 本地配置: 项目目录中的 .env
+# Global config: ~/.affine-cli/affine-cli.env
+# Local config: .env in the project directory
 
 AFFINE_BASE_URL=https://app.affine.pro
 AFFINE_API_TOKEN=your_api_token
 AFFINE_WORKSPACE_ID=your_workspace_id
 ```
 
-配置优先级：环境变量 > 本地 `.env` > 全局 `~/.affine-cli/affine-cli.env`
+Configuration priority: environment variables > local `.env` > global `~/.affine-cli/affine-cli.env`
 
-## 使用方法
+## Usage
 
 ```bash
-# 认证
+# Authentication
 affine-cli auth login
 affine-cli auth status
 affine-cli auth logout
 
-# 工作区
+# Workspaces
 affine-cli workspace list
 
-# 文档
+# Documents
 affine-cli doc list --workspace <workspace-id>
-affine-cli doc create -t "我的文档" -c "./content.md"
+affine-cli doc create -t "My Document" -c "./content.md"
 affine-cli doc info --id <doc-id>
 affine-cli doc delete --id <doc-id>
-affine-cli doc search --query "关键词"
+affine-cli doc search --query "keyword"
 
-# 标签
+# Tags
 affine-cli tags list
-affine-cli tags create --tag "重要"
-affine-cli tags add --id <doc-id> --tag "重要"
-affine-cli tags remove --id <doc-id> --tag "重要"
+affine-cli tags create --tag "Important"
+affine-cli tags add --id <doc-id> --tag "Important"
+affine-cli tags remove --id <doc-id> --tag "Important"
 
-# 文件夹
+# Folders
 affine-cli folder all
-affine-cli folder create --name "我的文件夹"
+affine-cli folder create --name "My Folder"
 affine-cli folder list --id <folder-id>
 
-# 收藏夹
+# Collections
 affine-cli collection list
-affine-cli collection create --name "我的收藏夹"
+affine-cli collection create --name "My Collection"
 
-# 文件
+# Files
 affine-cli file upload --file "./image.png"
 affine-cli file list
 
-# 评论
+# Comments
 affine-cli comment list --doc-id <doc-id>
-affine-cli comment create --doc-id <doc-id> --content "好想法！"
+affine-cli comment create --doc-id <doc-id> --content "Good idea!"
 
-# 数据库
-affine-cli database create --title "任务表"
+# Databases
+affine-cli database create --title "Task Table"
 affine-cli database list --doc-id <doc-id>
 affine-cli database columns --doc-id <doc-id> --db-id <db-id>
 ```
 
-## 命令详解
+## Command Reference
 
-### 认证模块 (auth)
+### Auth Module (auth)
 
-| 命令       | 说明                  | 参数                                                                                                  |
-| ---------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| **login**  | 使用账号或 Token 登录 | `--url` 服务器地址 `--token` API Token `--workspace` 工作区ID `--local` 保存到本地 `--force` 强制覆盖 |
-| **logout** | 退出登录              | `--local` 删除本地配置                                                                                |
-| **status** | 获取登录状态          | `--json` JSON格式输出                                                                                 |
+| Command     | Description                 | Parameters                                                                                                      |
+| ----------- | --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **login**   | Login with account or token | `--url` Server URL `--token` API Token `--workspace` Workspace ID `--local` Save locally `--force` Force overwrite |
+| **logout**  | Logout                      | `--local` Delete local config                                                                                   |
+| **status**  | Get login status            | `--json` JSON format output                                                                                     |
 
-### 工作区模块 (workspace)
+### Workspace Module (workspace)
 
-| 命令     | 说明                   | 参数                           |
-| -------- | ---------------------- | ------------------------------ |
-| **list** | 获取所有工作区基本信息 | `--format` 输出格式(text/json) |
+| Command  | Description                     | Parameters                        |
+| -------- | ------------------------------- | --------------------------------- |
+| **list** | Get basic info for all workspaces | `--format` Output format (text/json) |
 
-### 文档模块 (doc)
+### Document Module (doc)
 
-| 命令          | 说明                       | 参数                                                                                                                      |
-| ------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **list**      | 列出工作区文档（支持分页） | `--count` 每页数量 `--skip` 偏移量 `--after` 游标 `--workspace` 工作区ID                                                  |
-| **info**      | 获取文档详情               | `--id` 文档ID `--workspace` 工作区ID `--content` 内容模式(markdown/raw/hidden)                                            |
-| **create**    | 创建新文档                 | `--title` 标题 `--content` 内容 `--file` 从文件导入 `--folder` 文件夹ID `--tags` 标签列表 `--workspace` 工作区ID          |
-| **search**    | 搜索文档                   | `--query` 关键词 `--workspace` 工作区ID `--count` 返回数量 `--match-mode` 匹配模式 `--tag` 标签过滤                       |
-| **delete**    | 删除文档                   | `--id` 文档ID `--workspace` 工作区ID                                                                                      |
-| **copy**      | 复制文档                   | `--id` 源文档ID `--title` 新标题 `--parent` 父文档ID `--folder` 目标文件夹 `--workspace` 工作区ID                         |
-| **update**    | 更新文档属性               | `--id` 文档ID `--title` 标题 `--parent` 父文档 `--folder` 文件夹 `--workspace` 工作区ID                                   |
-| **replace**   | 替换文档内容               | `--id` 文档ID `--search` 搜索文本 `--replace` 替换文本 `--workspace` 工作区ID `--match-all` 替换所有 `--preview` 预览模式 |
-| **append**    | 追加文档内容               | `--id` 文档ID `--content` 内容 `--file` 从文件导入 `--workspace` 工作区ID                                                 |
-| **publish**   | 发布文档                   | `--id` 文档ID `--workspace` 工作区ID                                                                                      |
-| **unpublish** | 取消发布文档               | `--id` 文档ID `--workspace` 工作区ID                                                                                      |
+| Command        | Description                        | Parameters                                                                                                                |
+| -------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **list**       | List workspace documents (paginated) | `--count` Page size `--skip` Offset `--after` Cursor `--workspace` Workspace ID                                          |
+| **info**       | Get document details               | `--id` Document ID `--workspace` Workspace ID `--content` Content mode (markdown/raw/hidden)                              |
+| **create**     | Create a new document              | `--title` Title `--content` Content `--file` Import from file `--folder` Folder ID `--tags` Tag list `--workspace` Workspace ID |
+| **search**     | Search documents                   | `--query` Keyword `--workspace` Workspace ID `--count` Return count `--match-mode` Match mode `--tag` Tag filter          |
+| **delete**     | Delete a document                  | `--id` Document ID `--workspace` Workspace ID                                                                             |
+| **copy**       | Copy a document                    | `--id` Source document ID `--title` New title `--parent` Parent document ID `--folder` Target folder `--workspace` Workspace ID |
+| **update**     | Update document properties         | `--id` Document ID `--title` Title `--parent` Parent document `--folder` Folder `--workspace` Workspace ID                |
+| **replace**    | Replace document content           | `--id` Document ID `--search` Search text `--replace` Replacement text `--workspace` Workspace ID `--match-all` Replace all `--preview` Preview mode |
+| **append**     | Append document content            | `--id` Document ID `--content` Content `--file` Import from file `--workspace` Workspace ID                               |
+| **publish**    | Publish a document                 | `--id` Document ID `--workspace` Workspace ID                                                                             |
+| **unpublish**  | Unpublish a document               | `--id` Document ID `--workspace` Workspace ID                                                                             |
 
-### 标签模块 (tags)
+### Tags Module (tags)
 
-| 命令       | 说明               | 参数                                                             |
-| ---------- | ------------------ | ---------------------------------------------------------------- |
-| **list**   | 列出所有标签       | `--workspace` 工作区ID                                           |
-| **create** | 创建标签           | `--tag` 标签名 `--color` 颜色 `--workspace` 工作区ID             |
-| **add**    | 添加标签到文档     | `-d` 文档ID `--tag` 标签名 `--workspace` 工作区ID                |
-| **remove** | 从文档移除标签     | `-d` 文档ID `--tag` 标签名 `--workspace` 工作区ID                |
-| **delete** | 删除标签           | `--tag` 标签名 `--workspace` 工作区ID                            |
-| **info**   | 获取标签关联的文档 | `--tag` 标签名 `--workspace` 工作区ID `--ignore-case` 忽略大小写 |
+| Command     | Description                    | Parameters                                                        |
+| ----------- | ------------------------------ | ------------------------------------------------------------------ |
+| **list**    | List all tags                  | `--workspace` Workspace ID                                         |
+| **create**  | Create a tag                   | `--tag` Tag name `--color` Color `--workspace` Workspace ID        |
+| **add**     | Add tag to document            | `-d` Document ID `--tag` Tag name `--workspace` Workspace ID       |
+| **remove**  | Remove tag from document       | `-d` Document ID `--tag` Tag name `--workspace` Workspace ID       |
+| **delete**  | Delete a tag                   | `--tag` Tag name `--workspace` Workspace ID                        |
+| **info**    | Get documents associated with a tag | `--tag` Tag name `--workspace` Workspace ID `--ignore-case` Ignore case |
 
-### 文件夹模块 (folder)
+### Folder Module (folder)
 
-| 命令       | 说明                 | 参数                                                                                    |
-| ---------- | -------------------- | --------------------------------------------------------------------------------------- |
-| **all**    | 所有文件夹列表       | `--workspace` 工作区ID                                                                  |
-| **list**   | 文件夹内容列表       | `--id` 文件夹ID `--folder` 仅文件夹 `--workspace` 工作区ID                              |
-| **create** | 创建文件夹           | `--name` 文件夹名 `--parent` 父文件夹ID `--index` 排序索引 `--workspace` 工作区ID       |
-| **delete** | 删除文件夹           | `--id` 文件夹ID `--workspace` 工作区ID                                                  |
-| **update** | 更新文件夹属性       | `--id` 文件夹ID `--name` 名称 `--parent` 父文件夹 `--index` 排序 `--workspace` 工作区ID |
-| **clear**  | 清除空文件夹         | `--workspace` 工作区ID                                                                  |
-| **add**    | 添加文档到文件夹     | `--id` 文件夹ID `--doc` 文档ID `--index` 排序 `--workspace` 工作区ID                    |
-| **move**   | 移动文档到目标文件夹 | `--id` 目标文件夹ID `--doc` 文档ID `--workspace` 工作区ID                               |
-| **remove** | 从文件夹移除文档     | `--id` 文件夹ID `--doc` 文档ID `--workspace` 工作区ID                                   |
+| Command     | Description                  | Parameters                                                                                         |
+| ----------- | ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| **all**     | List all folders             | `--workspace` Workspace ID                                                                         |
+| **list**    | List folder contents         | `--id` Folder ID `--folder` Folders only `--workspace` Workspace ID                                |
+| **create**  | Create a folder              | `--name` Folder name `--parent` Parent folder ID `--index` Sort index `--workspace` Workspace ID   |
+| **delete**  | Delete a folder              | `--id` Folder ID `--workspace` Workspace ID                                                        |
+| **update**  | Update folder properties     | `--id` Folder ID `--name` Name `--parent` Parent folder `--index` Sort order `--workspace` Workspace ID |
+| **clear**   | Remove empty folders         | `--workspace` Workspace ID                                                                         |
+| **add**     | Add document to folder       | `--id` Folder ID `--doc` Document ID `--index` Sort order `--workspace` Workspace ID               |
+| **move**    | Move document to target folder | `--id` Target folder ID `--doc` Document ID `--workspace` Workspace ID                          |
+| **remove**  | Remove document from folder  | `--id` Folder ID `--doc` Document ID `--workspace` Workspace ID                                    |
 
-### 收藏夹模块 (collection)
+### Collection Module (collection)
 
-| 命令       | 说明             | 参数                                                   |
-| ---------- | ---------------- | ------------------------------------------------------ |
-| **list**   | 所有收藏夹列表   | `--workspace` 工作区ID                                 |
-| **info**   | 收藏夹内文档列表 | `--id` 收藏夹ID `--workspace` 工作区ID                 |
-| **create** | 创建收藏夹       | `--name` 收藏夹名 `--workspace` 工作区ID               |
-| **update** | 更新收藏夹名称   | `--id` 收藏夹ID `--name` 新名称 `--workspace` 工作区ID |
-| **delete** | 删除收藏夹       | `--id` 收藏夹ID `--workspace` 工作区ID                 |
-| **add**    | 添加文档到收藏夹 | `--id` 收藏夹ID `--doc` 文档ID `--workspace` 工作区ID  |
-| **remove** | 从收藏夹移除文档 | `--id` 收藏夹ID `--doc` 文档ID `--workspace` 工作区ID  |
+| Command     | Description                | Parameters                                                    |
+| ----------- | -------------------------- | ------------------------------------------------------------- |
+| **list**    | List all collections       | `--workspace` Workspace ID                                    |
+| **info**    | List documents in collection | `--id` Collection ID `--workspace` Workspace ID             |
+| **create**  | Create a collection        | `--name` Collection name `--workspace` Workspace ID           |
+| **update**  | Update collection name     | `--id` Collection ID `--name` New name `--workspace` Workspace ID |
+| **delete**  | Delete a collection        | `--id` Collection ID `--workspace` Workspace ID               |
+| **add**     | Add document to collection | `--id` Collection ID `--doc` Document ID `--workspace` Workspace ID |
+| **remove**  | Remove document from collection | `--id` Collection ID `--doc` Document ID `--workspace` Workspace ID |
 
-### 文件模块 (file)
+### File Module (file)
 
-| 命令       | 说明           | 参数                                                                                                          |
-| ---------- | -------------- | ------------------------------------------------------------------------------------------------------------- |
-| **upload** | 上传附件       | `--file` 文件路径 `--content` Base64内容 `--filename` 文件名 `--content-type` MIME类型 `--workspace` 工作区ID |
-| **delete** | 删除附件       | `--id` 附件ID `--permanently` 永久删除 `--workspace` 工作区ID                                                 |
-| **clean**  | 清理已删除附件 | `--workspace` 工作区ID                                                                                        |
+| Command     | Description            | Parameters                                                                                                          |
+| ----------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **upload**  | Upload an attachment   | `--file` File path `--content` Base64 content `--filename` File name `--content-type` MIME type `--workspace` Workspace ID |
+| **delete**  | Delete an attachment   | `--id` Attachment ID `--permanently` Permanent delete `--workspace` Workspace ID                                    |
+| **clean**   | Clean deleted attachments | `--workspace` Workspace ID                                                                                       |
 
-### 评论模块 (comment)
+### Comment Module (comment)
 
-| 命令        | 说明          | 参数                                                                                                                              |
-| ----------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **list**    | 列出文档评论  | `--doc-id` 文档ID `--workspace` 工作区ID `--first` 返回数量 `--offset` 偏移量 `--full` 完整数据                                   |
-| **create**  | 创建评论      | `--doc-id` 文档ID `--content` 评论内容 `--workspace` 工作区ID `--selection` 引用文本 `--doc-title` 文档标题 `--doc-mode` 文档模式 |
-| **update**  | 更新评论      | `--id` 评论ID `--content` 新内容                                                                                                  |
-| **delete**  | 删除评论      | `--id` 评论ID `--workspace` 工作区ID `--doc-id` 文档ID                                                                            |
-| **resolve** | 解决/取消解决 | `--id` 评论ID `--resolved` true/false                                                                                             |
+| Command      | Description           | Parameters                                                                                                                    |
+| ------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **list**     | List document comments | `--doc-id` Document ID `--workspace` Workspace ID `--first` Return count `--offset` Offset `--full` Full data              |
+| **create**   | Create a comment       | `--doc-id` Document ID `--content` Comment content `--workspace` Workspace ID `--selection` Quoted text `--doc-title` Document title `--doc-mode` Document mode |
+| **update**   | Update a comment       | `--id` Comment ID `--content` New content                                                                                     |
+| **delete**   | Delete a comment       | `--id` Comment ID `--workspace` Workspace ID `--doc-id` Document ID                                                           |
+| **resolve**  | Resolve/unresolve     | `--id` Comment ID `--resolved` true/false                                                                                     |
 
-### 数据库模块 (database)
+### Database Module (database)
 
-| 命令        | 说明             | 参数                                                                                                                              |
-| ----------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **list**    | 列出文档中数据库 | `--doc` 文档ID `--workspace` 工作区ID                                                                                             |
-| **columns** | 读取列定义       | `--doc` 文档ID `--id` 数据库ID `--workspace` 工作区ID                                                                             |
-| **query**   | 查询数据         | `--doc` 文档ID `--id` 数据库ID `--rows` 行ID列表 `--columns` 列名列表 `--query` 筛选条件 `--full` 完整输出 `--workspace` 工作区ID |
-| **remove**  | 删除行           | `--doc` 文档ID `--id` 数据库ID `--row` 行ID `--query` 筛选条件 `--workspace` 工作区ID                                             |
-| **update**  | 更新行           | `--doc` 文档ID `--id` 数据库ID `--values` 单元格数据 `--row` 行ID `--query` 筛选条件 `--workspace` 工作区ID                       |
-| **create**  | 创建数据库       | `--content` 数据(JSON) `--doc` 文档ID `--title` 标题 `--view-mode` 视图模式 `--workspace` 工作区ID                                |
-| **delete**  | 删除数据库       | `--doc` 文档ID `--id` 数据库ID `--workspace` 工作区ID                                                                             |
-| **insert**  | 插入数据         | `--doc` 文档ID `--id` 数据库ID `--content` 数据 `--workspace` 工作区ID                                                            |
+| Command     | Description              | Parameters                                                                                                                    |
+| ----------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| **list**    | List databases in a document | `--doc` Document ID `--workspace` Workspace ID                                                                           |
+| **columns** | Read column definitions  | `--doc` Document ID `--id` Database ID `--workspace` Workspace ID                                                             |
+| **query**   | Query data               | `--doc` Document ID `--id` Database ID `--rows` Row ID list `--columns` Column name list `--query` Filter condition `--full` Full output `--workspace` Workspace ID |
+| **remove**  | Delete rows              | `--doc` Document ID `--id` Database ID `--row` Row ID `--query` Filter condition `--workspace` Workspace ID                    |
+| **update**  | Update rows              | `--doc` Document ID `--id` Database ID `--values` Cell data `--row` Row ID `--query` Filter condition `--workspace` Workspace ID |
+| **create**  | Create a database        | `--content` Data (JSON) `--doc` Document ID `--title` Title `--view-mode` View mode `--workspace` Workspace ID                 |
+| **delete**  | Delete a database        | `--doc` Document ID `--id` Database ID `--workspace` Workspace ID                                                             |
+| **insert**  | Insert data              | `--doc` Document ID `--id` Database ID `--content` Data `--workspace` Workspace ID                                             |
 
-## 命令帮助
+## Command Help
 
 ```bash
-# 显示主帮助
+# Show main help
 affine-cli help
 
-# 显示模块帮助
+# Show module help
 affine-cli doc --help
 
-# 显示特定命令帮助
+# Show specific command help
 affine-cli doc create --help
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 src/
-├── index.ts              # CLI 入口点
-├── cli/                # CLI 命令模块
+├── index.ts              # CLI entry point
+├── cli/                # CLI command modules
 │   ├── auth.ts
 │   ├── workspace.ts
 │   ├── doc.ts
@@ -231,7 +231,7 @@ src/
 │   ├── file.ts
 │   ├── comments.ts
 │   └── database.ts
-├── core/               # 核心业务逻辑
+├── core/               # Core business logic
 │   ├── auth.ts
 │   ├── workspace.ts
 │   ├── docs.ts
@@ -242,7 +242,7 @@ src/
 │   ├── comments.ts
 │   ├── database.ts
 │   └── constants.ts
-└── utils/              # 工具函数
+└── utils/              # Utility functions
     ├── config.ts
     ├── auth.ts
     ├── graphqlClient.ts
@@ -253,24 +253,24 @@ src/
     └── misc.ts
 ```
 
-## 技术栈
+## Tech Stack
 
-- **语言**: TypeScript
-- **运行时**: Node.js
-- **GraphQL 客户端**: undici
+- **Language**: TypeScript
+- **Runtime**: Node.js
+- **GraphQL Client**: undici
 - **WebSocket**: socket.io-client
 - **CRDT**: Yjs
 
-## 致谢
+## Acknowledgements
 
-本项目参考了 [dawncr0w/affine-mcp-server](https://github.com/dawncr0w/affine-mcp-server) 的实现。我们感谢原作者奠定的基础。
+This project references the implementation of [dawncr0w/affine-mcp-server](https://github.com/dawncr0w/affine-mcp-server). We thank the original author for laying the foundation.
 
-## 许可证
+## License
 
-MIT © [The AFFiNE CLI Contributors](LICENSE) & [木炭](https://github.com/woodcoal/affine-cli) <woodcoal@qq.com>
+MIT © [The AFFiNE CLI Contributors](LICENSE) & [woodcoal](https://github.com/woodcoal/affine-cli) <woodcoal@qq.com>
 
-## 作者
+## Author
 
-- **作者**: 木炭
-- **邮箱**: <woodcoal@qq.com>
+- **Author**: woodcoal
+- **Email**: <woodcoal@qq.com>
 - **GitHub**: <https://github.com/woodcoal/affine-cli>

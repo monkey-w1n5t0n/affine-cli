@@ -1,13 +1,13 @@
 /**
- * 数据库核心模块
- * 处理 Affine 数据库的增删改查操作
+ * Database core module
+ * Handles CRUD operations for Affine databases
  *
- * 主要功能：
- * - 数据库行管理（增删改查）
- * - 数据库列定义读取
- * - 数据库视图管理
- * - 筛选条件处理
- * - 数据导入导出
+ * Main features:
+ * - Database row management (CRUD)
+ * - Database column definition reading
+ * - Database view management
+ * - Filter condition processing
+ * - Data import/export
  */
 
 import * as Y from 'yjs';
@@ -17,88 +17,88 @@ import { generateId } from '../utils/misc.js';
 import { TAG_COLORS } from './constants.js';
 
 /**
- * 数据库列定义类型
- * 用于描述数据库中每个列的结构信息
+ * Database column definition type
+ * Describes the structure of each column in a database
  */
 export interface DatabaseColumnDef {
-	id: string; // 列唯一标识符
-	name: string; // 列名称
-	type: string; // 列类型（title, rich-text, number, select, multi-select, date, checkbox, progress, link）
-	options: Array<{ id: string; value: string; color: string }>; // 选项列表（用于 select/multi-select 类型）
-	raw?: any; // 原始列定义对象
+	id: string; // Column unique identifier
+	name: string; // Column name
+	type: string; // Column type (title, rich-text, number, select, multi-select, date, checkbox, progress, link)
+	options: Array<{ id: string; value: string; color: string }>; // Option list (for select/multi-select types)
+	raw?: any; // Raw column definition object
 }
 
 /**
- * 数据库视图列定义类型
- * 描述视图中的列配置信息
+ * Database view column definition type
+ * Describes column configuration in a view
  */
 export interface DatabaseViewColumnDef {
-	id: string; // 列唯一标识符
-	name: string | null; // 列名称（可能为 null）
-	hidden: boolean; // 是否隐藏
-	width: number | null; // 列宽度
+	id: string; // Column unique identifier
+	name: string | null; // Column name (may be null)
+	hidden: boolean; // Whether hidden
+	width: number | null; // Column width
 }
 
 /**
- * 数据库视图定义类型
- * 描述数据库视图的完整配置
+ * Database view definition type
+ * Describes the complete configuration of a database view
  */
 export interface DatabaseViewDef {
-	id: string; // 视图唯一标识符
-	name: string; // 视图名称
-	mode: string; // 视图模式（table, kanban 等）
-	columns: DatabaseViewColumnDef[]; // 视图中的列配置列表
-	columnIds: string[]; // 列 ID 列表（用于快速访问）
+	id: string; // View unique identifier
+	name: string; // View name
+	mode: string; // View mode (table, kanban, etc.)
+	columns: DatabaseViewColumnDef[]; // Column configuration list in the view
+	columnIds: string[]; // Column ID list (for quick access)
 	groupBy: {
-		// 分组配置（用于 kanban 视图）
+		// Grouping configuration (for kanban view)
 		columnId: string | null;
 		name: string | null;
 		type: string | null;
 	} | null;
 	header: {
-		// 头部配置
-		titleColumn: string | null; // 标题列 ID
-		iconColumn: string | null; // 图标列 ID
+		// Header configuration
+		titleColumn: string | null; // Title column ID
+		iconColumn: string | null; // Icon column ID
 	};
 }
 
 /**
- * 数据库列查询结构
- * 优化列查找效率的索引结构
+ * Database column lookup structure
+ * Index structure for efficient column lookups
  */
 export interface DatabaseColumnLookup {
-	columnDefs: DatabaseColumnDef[]; // 所有列定义列表
-	colById: Map<string, DatabaseColumnDef>; // 按 ID 索引的列映射
-	colByName: Map<string, DatabaseColumnDef>; // 按名称索引的列映射
-	colByNameLower: Map<string, DatabaseColumnDef>; // 按小写名称索引的列映射（用于不区分大小写查找）
-	titleCol: DatabaseColumnDef | null; // Title 列定义
+	columnDefs: DatabaseColumnDef[]; // All column definitions
+	colById: Map<string, DatabaseColumnDef>; // Column map indexed by ID
+	colByName: Map<string, DatabaseColumnDef>; // Column map indexed by name (case-sensitive)
+	colByNameLower: Map<string, DatabaseColumnDef>; // Column map indexed by lowercase name (case-insensitive lookup)
+	titleCol: DatabaseColumnDef | null; // Title column definition
 }
 
 /**
- * 数据库文档上下文
- * 包含操作数据库所需的所有状态信息
+ * Database document context
+ * Contains all state needed to operate on a database
  */
 export interface DatabaseDocContext extends DatabaseColumnLookup {
-	socket: any; // WebSocket 连接
-	doc: Y.Doc; // Yjs 文档对象
-	prevSV: Uint8Array; // 之前的状态向量（用于增量更新）
-	blocks: Y.Map<any>; // 文档中的所有 block
-	dbBlock: Y.Map<any>; // 数据库 block 本身
-	cellsMap: Y.Map<any>; // 数据库单元格映射
-	rowIds: string[]; // 数据库行 ID 列表
+	socket: any; // WebSocket connection
+	doc: Y.Doc; // Yjs document object
+	prevSV: Uint8Array; // Previous state vector (for incremental updates)
+	blocks: Y.Map<any>; // All blocks in the document
+	dbBlock: Y.Map<any>; // The database block itself
+	cellsMap: Y.Map<any>; // Database cell map
+	rowIds: string[]; // Database row ID list
 }
 
 /* ============================================================================
- * 可复用辅助函数
+ * Reusable helper functions
  * ============================================================================ */
 
 /**
- * 创建 Affine block 的基本属性
+ * Create base properties for an Affine block
  *
- * @param id - block 唯一 ID
- * @param flavour - block 类型（如 'affine:page', 'affine:note', 'affine:database'）
- * @param parentId - 父 block ID
- * @returns 配置好的 Y.Map 对象
+ * @param id - Block unique ID
+ * @param flavour - Block type (e.g. 'affine:page', 'affine:note', 'affine:database')
+ * @param parentId - Parent block ID
+ * @returns Configured Y.Map object
  */
 function createBlockBase(id: string, flavour: string, parentId: string | null = null): Y.Map<any> {
 	const block = new Y.Map<any>();
@@ -111,14 +111,14 @@ function createBlockBase(id: string, flavour: string, parentId: string | null = 
 }
 
 /**
- * 创建数据库列定义
+ * Create a database column definition
  *
- * @param columnId - 列唯一 ID
- * @param name - 列名称
- * @param type - 列类型
- * @param width - 列宽度
- * @param options - 选项列表（用于 select/multi-select 类型）
- * @returns 配置好的列定义 Y.Map
+ * @param columnId - Column unique ID
+ * @param name - Column name
+ * @param type - Column type
+ * @param width - Column width
+ * @param options - Option list (for select/multi-select types)
+ * @returns Configured column definition Y.Map
  */
 function createColumnDefinition(
 	columnId: string,
@@ -132,7 +132,7 @@ function createColumnDefinition(
 	colDef.set('name', name);
 	colDef.set('type', type);
 
-	// 根据类型设置额外属性
+	// Set additional properties based on type
 	if (type === 'number') {
 		const data = new Y.Map<any>();
 		data.set('decimal', 0);
@@ -163,12 +163,12 @@ function createColumnDefinition(
 }
 
 /**
- * 创建视图列配置
+ * Create a view column configuration
  *
- * @param columnId - 对应的列 ID
- * @param hide - 是否隐藏
- * @param width - 列宽度
- * @returns 配置好的视图列 Y.Map
+ * @param columnId - Corresponding column ID
+ * @param hide - Whether to hide
+ * @param width - Column width
+ * @returns Configured view column Y.Map
  */
 function createViewColumn(columnId: string, hide: boolean = false, type: string): Y.Map<any> {
 	const viewCol = new Y.Map<any>();
@@ -179,13 +179,13 @@ function createViewColumn(columnId: string, hide: boolean = false, type: string)
 }
 
 /**
- * 创建数据库行 block
+ * Create a database row block
  *
- * @param rowBlockId - 行 block ID
- * @param dbBlockId - 所属数据库 block ID
- * @param title - 行标题文本
- * @param linkedDocId - 可选的关联文档 ID
- * @returns 配置好的行 block Y.Map
+ * @param rowBlockId - Row block ID
+ * @param dbBlockId - Parent database block ID
+ * @param title - Row title text
+ * @param linkedDocId - Optional linked document ID
+ * @returns Configured row block Y.Map
  */
 function createDatabaseRowBlock(
 	rowBlockId: string,
@@ -201,7 +201,7 @@ function createDatabaseRowBlock(
 	rowBlock.set('sys:children', new Y.Array<string>());
 	rowBlock.set('prop:type', 'text');
 
-	// 设置标题或关联文档
+	// Set title or linked document
 	if (linkedDocId) {
 		rowBlock.set('prop:text', makeLinkedDocText(linkedDocId));
 	} else {
@@ -212,31 +212,31 @@ function createDatabaseRowBlock(
 }
 
 // /**
-//  * 从数据行中推断列类型
+//  * Infer column type from data rows
 //  *
-//  * @param key - 列键名
-//  * @param values - 该列的所有值
-//  * @returns 推断的列类型字符串
+//  * @param key - Column key name
+//  * @param values - All values in this column
+//  * @returns Inferred column type string
 //  */
 // function inferColumnType(key: string, values: unknown[]): string {
-// 	// title 列
+// 	// Title column
 // 	if (key.toLowerCase() === 'title') return 'title';
 
-// 	// 过滤空值
+// 	// Filter empty values
 // 	const nonEmptyValues = values.filter((v) => v !== undefined && v !== null && v !== '');
 // 	if (nonEmptyValues.length === 0) return 'rich-text';
 
-// 	// 检测布尔值
+// 	// Detect booleans
 // 	if (nonEmptyValues.every((v) => typeof v === 'boolean')) return 'checkbox';
 
-// 	// 检测数字
+// 	// Detect numbers
 // 	if (nonEmptyValues.every((v) => typeof v === 'number' || !isNaN(Number(v)))) return 'number';
 
-// 	// 检测日期
+// 	// Detect dates
 // 	if (nonEmptyValues.every((v) => !isNaN(Date.parse(String(v))) || typeof v === 'number'))
 // 		return 'date';
 
-// 	// 检测 URL
+// 	// Detect URLs
 // 	if (
 // 		nonEmptyValues.every(
 // 			(v) => typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://'))
@@ -244,7 +244,7 @@ function createDatabaseRowBlock(
 // 	)
 // 		return 'link';
 
-// 	// 检测进度（0-100 的数字）
+// 	// Detect progress (numbers 0-100)
 // 	if (
 // 		nonEmptyValues.every((v) => {
 // 			const n = Number(v);
@@ -253,10 +253,10 @@ function createDatabaseRowBlock(
 // 	)
 // 		return 'progress';
 
-// 	// 检测多选（数组）
+// 	// Detect multi-select (arrays)
 // 	if (nonEmptyValues.every((v) => Array.isArray(v))) return 'multi-select';
 
-// 	// 检测选项（重复值较少）
+// 	// Detect select (few repeated values)
 // 	const uniqueValues = new Set(nonEmptyValues.map(String));
 // 	if (uniqueValues.size <= 20 && uniqueValues.size < nonEmptyValues.length * 0.5) {
 // 		return 'select';
@@ -266,10 +266,10 @@ function createDatabaseRowBlock(
 // }
 
 /**
- * 获取列类型的默认宽度
+ * Get default width for a column type
  *
- * @param type - 列类型
- * @returns 默认宽度值
+ * @param type - Column type
+ * @returns Default width value
  */
 function getDefaultColumnWidth(type: string): number {
 	switch (type) {
@@ -296,25 +296,25 @@ function getDefaultColumnWidth(type: string): number {
 }
 
 /* ============================================================================
- * 文本处理辅助函数
+ * Text processing helper functions
  * ============================================================================ */
 
 /**
- * 将文本字符串或 delta 数组转换为 Y.Text 对象
+ * Convert a text string or delta array to a Y.Text object
  *
- * Affine 中的文本使用 Y.Text 类型存储，支持富文本 delta 格式
+ * Text in Affine is stored as Y.Text, supporting rich-text delta format
  *
- * @param content - 输入内容，可以是：
- *   - 普通字符串：直接插入为纯文本
- *   - delta 数组：用于包含样式属性的富文本
- *     格式：[{ insert: string, attributes?: { ... } }, ...]
- * @returns Y.Text 对象
+ * @param content - Input content, can be:
+ *   - Plain string: inserted directly as plain text
+ *   - Delta array: for rich text with style attributes
+ *     Format: [{ insert: string, attributes?: { ... } }, ...]
+ * @returns Y.Text object
  *
  * @example
- * // 普通文本
+ * // Plain text
  * makeText("Hello World")
  *
- * // 富文本
+ * // Rich text
  * makeText([{ insert: "Bold", attributes: { bold: true } }])
  */
 function makeText(content: string | any[]): Y.Text {
@@ -335,22 +335,22 @@ function makeText(content: string | any[]): Y.Text {
 }
 
 /**
- * 创建关联文档的文本对象
+ * Create a linked document text object
  *
- * 用于在数据库行中创建指向其他文档的链接（Linked Page）
- * 内部使用零宽字符 + reference 属性实现
+ * Used to create links to other documents (Linked Page) in database rows
+ * Internally uses a zero-width character + reference attribute
  *
- * @param docId - 要关联的文档 ID
- * @returns 包含关联引用的 Y.Text 对象
+ * @param docId - Document ID to link to
+ * @returns Y.Text object containing the linked reference
  *
  * @example
  * const text = makeLinkedDocText("abc123def");
- * // 结果文本包含一个指向 "abc123def" 文档的引用
+ * // Result text contains a reference to document "abc123def"
  */
 function makeLinkedDocText(docId: string): Y.Text {
 	const delta = [
 		{
-			insert: '\u200B', // 零宽字符，作为链接的可视占位符
+			insert: '\u200B', // Zero-width character, serves as a visual placeholder for the link
 			attributes: { reference: { type: 'LinkedPage', pageId: docId } }
 		}
 	];
@@ -358,12 +358,12 @@ function makeLinkedDocText(docId: string): Y.Text {
 }
 
 /**
- * 从数据库行 block 中读取关联的文档 ID
+ * Read the linked document ID from a database row block
  *
- * 解析行 block 中的文本，提取 LinkedPage 类型的引用
+ * Parses the text in the row block and extracts the LinkedPage reference
  *
- * @param rowBlock - 数据库行 block（Y.Map 对象）
- * @returns 关联的文档 ID，如果不存在则返回 null
+ * @param rowBlock - Database row block (Y.Map object)
+ * @returns Linked document ID, or null if none exists
  *
  * @example
  * const linkedDocId = readLinkedDocId(rowBlock);
@@ -385,12 +385,12 @@ function readLinkedDocId(rowBlock: Y.Map<any>): string | null {
 }
 
 /**
- * 将值转换为字符串
+ * Convert a value to string
  *
- * 处理 Y.Text 对象和其他类型的值，统一转换为字符串输出
+ * Handles Y.Text objects and other value types, converting them uniformly to strings
  *
- * @param value - 输入值，支持 Y.Text、字符串或其他类型
- * @returns 字符串表示
+ * @param value - Input value, supports Y.Text, string, or other types
+ * @returns String representation
  */
 function asText(value: unknown): string {
 	if (value instanceof Y.Text) return value.toString();
@@ -399,17 +399,17 @@ function asText(value: unknown): string {
 }
 
 /**
- * 从 Y.Array 中提取子元素 ID
+ * Extract child IDs from a Y.Array
  *
- * Y.Array 中的元素可能是字符串或数组，需要统一提取
- * 用于获取 block 的子元素 ID 列表
+ * Elements in a Y.Array may be strings or arrays; extract them uniformly
+ * Used to get the list of child block IDs
  *
- * @param value - Y.Array 对象或普通数组
- * @returns 子元素 ID 字符串数组
+ * @param value - Y.Array object or plain array
+ * @returns Array of child ID strings
  *
  * @example
  * // Y.Array: ["child1", "child2"]
- * // 或嵌套数组: [["child1"], ["child2"]]
+ * // Or nested arrays: [["child1"], ["child2"]]
  * childIdsFrom(children) // ["child1", "child2"]
  */
 function childIdsFrom(value: unknown): string[] {
@@ -432,29 +432,29 @@ function childIdsFrom(value: unknown): string[] {
 }
 
 /**
- * 检查是否为 title 别名键
+ * Check if a key is a title alias
  *
- * 用于识别可能表示 title 的键名（如 "title" 的各种变体）
+ * Used to identify keys that may represent "title" (e.g. various variants of "title")
  *
- * @param value - 要检查的键名
- * @returns 是否为 title 别名
+ * @param value - Key name to check
+ * @returns Whether the key is a title alias
  */
 function isTitleAliasKey(value: string): boolean {
 	return value.trim().toLowerCase() === 'title';
 }
 
 /**
- * 读取数据库列定义
+ * Read database column definitions
  *
- * 从数据库 block 的 prop:columns 属性中解析列定义列表
- * 支持 Y.Map 和普通对象两种格式
+ * Parses column definitions from the database block's prop:columns property
+ * Supports both Y.Map and plain object formats
  *
- * @param dbBlock - 数据库 block 对象（Y.Map）
- * @returns 数据库列定义数组
+ * @param dbBlock - Database block object (Y.Map)
+ * @returns Array of database column definitions
  *
  * @example
  * const columns = readColumnDefs(dbBlock);
- * // 返回: [{ id: "col1", name: "标题", type: "title", options: [] }, ...]
+ * // Returns: [{ id: "col1", name: "Title", type: "title", options: [] }, ...]
  */
 function readColumnDefs(dbBlock: Y.Map<any>): DatabaseColumnDef[] {
 	const columnsRaw = dbBlock.get('prop:columns');
@@ -498,18 +498,18 @@ function readColumnDefs(dbBlock: Y.Map<any>): DatabaseColumnDef[] {
 }
 
 /**
- * 读取数据库视图定义列表
+ * Read database view definition list
  *
- * 从数据库 block 的 prop:views 属性中解析所有视图配置
- * 包括视图名称、模式、列配置、分组设置等
+ * Parses all view configurations from the database block's prop:views property
+ * Includes view name, mode, column configuration, grouping settings, etc.
  *
- * @param dbBlock - 数据库 block 对象
- * @param lookup - 列查询结构（包含列 ID 到列定义的映射）
- * @returns 数据库视图定义数组
+ * @param dbBlock - Database block object
+ * @param lookup - Column lookup structure (contains column ID to column definition mapping)
+ * @returns Array of database view definitions
  *
  * @example
  * const views = readDatabaseViewDefs(dbBlock, lookup);
- * // 返回: [{ id: "view1", name: "Table View", mode: "table", columns: [...], groupBy: null }, ...]
+ * // Returns: [{ id: "view1", name: "Table View", mode: "table", columns: [...], groupBy: null }, ...]
  */
 function readDatabaseViewDefs(
 	dbBlock: Y.Map<any>,
@@ -577,12 +577,12 @@ function readDatabaseViewDefs(
 }
 
 /**
- * 从数组值中提取元素列表
+ * Extract element list from array values
  *
- * 统一处理 Y.Array 和普通数组的转换
+ * Uniformly handles conversion of Y.Array and plain arrays
  *
- * @param value - 输入值（Y.Array 或普通数组）
- * @returns 元素数组
+ * @param value - Input value (Y.Array or plain array)
+ * @returns Element array
  */
 function databaseArrayValues(value: unknown): unknown[] {
 	if (value instanceof Y.Array) {
@@ -595,16 +595,16 @@ function databaseArrayValues(value: unknown): unknown[] {
 }
 
 /**
- * 构建列查询结构
+ * Build column lookup structure
  *
- * 为列定义创建多种索引结构，提高查找效率
- * - colById: 按列 ID 索引
- * - colByName: 按列名称索引（区分大小写）
- * - colByNameLower: 按小写列名称索引（不区分大小写）
- * - titleCol: Title 类型列
+ * Creates multiple index structures for column definitions to improve lookup efficiency
+ * - colById: indexed by column ID
+ * - colByName: indexed by column name (case-sensitive)
+ * - colByNameLower: indexed by lowercase column name (case-insensitive)
+ * - titleCol: Title type column
  *
- * @param columnDefs - 数据库列定义数组
- * @returns 包含多种索引的查询结构
+ * @param columnDefs - Database column definition array
+ * @returns Lookup structure with multiple indexes
  */
 function buildDatabaseColumnLookup(columnDefs: DatabaseColumnDef[]): DatabaseColumnLookup {
 	const colById = new Map<string, DatabaseColumnDef>();
@@ -623,13 +623,14 @@ function buildDatabaseColumnLookup(columnDefs: DatabaseColumnDef[]): DatabaseCol
 }
 
 /**
- * 查找数据库列
+ * Find a database column
  *
- * 通过键名查找列定义，支持 ID、名称（区分大小写）、名称（小写不区分大小写）三种方式
+ * Looks up a column definition by key, supporting three methods:
+ * ID, name (case-sensitive), and name (lowercase, case-insensitive)
  *
- * @param key - 查找键（列名或列 ID）
- * @param lookup - 列查询结构
- * @returns 找到的列定义，未找到则返回 null
+ * @param key - Lookup key (column name or column ID)
+ * @param lookup - Column lookup structure
+ * @returns Found column definition, or null if not found
  */
 function findDatabaseColumn(key: string, lookup: DatabaseColumnLookup): DatabaseColumnDef | null {
 	return (
@@ -641,67 +642,67 @@ function findDatabaseColumn(key: string, lookup: DatabaseColumnLookup): Database
 }
 
 /**
- * 获取可用列名称列表
+ * Get list of available column names
  *
- * 生成逗号分隔的可用列名称字符串，用于错误提示
+ * Generates a comma-separated string of available column names, used for error messages
  *
- * @param lookup - 列查询结构
- * @returns 可用列名称字符串（如 "title, 名称, 状态"）
+ * @param lookup - Column lookup structure
+ * @returns Available column names string (e.g. "title, Name, Status")
  */
 function availableDatabaseColumns(lookup: DatabaseColumnLookup): string {
 	return ['title', ...lookup.columnDefs.map((col) => col.name || col.id)].join(', ');
 }
 
 /**
- * 获取数据库行 ID 列表
+ * Get database row ID list
  *
- * 从数据库 block 的 sys:children 属性中提取所有行 ID
+ * Extracts all row IDs from the database block's sys:children property
  *
- * @param dbBlock - 数据库 block 对象
- * @returns 行 ID 字符串数组
+ * @param dbBlock - Database block object
+ * @returns Array of row ID strings
  */
 export function getDatabaseRowIds(dbBlock: Y.Map<any>): string[] {
 	return childIdsFrom(dbBlock.get('sys:children'));
 }
 
 /**
- * 读取数据库行标题
+ * Read database row title
  *
- * 从行 block 的 prop:text 属性中提取标题文本
+ * Extracts title text from the row block's prop:text property
  *
- * @param rowBlock - 行 block 对象
- * @returns 标题文本字符串
+ * @param rowBlock - Row block object
+ * @returns Title text string
  */
 function readDatabaseRowTitle(rowBlock: Y.Map<any>): string {
 	return asText(rowBlock.get('prop:text'));
 }
 
 // /**
-//  * 解析数据库标题值
+//  * Resolve database title value
 //  *
-//  * 从单元格数据中解析出标题值，优先级：
-//  * 1. Title 列的值
-//  * 2. 键名为 "title" 的值
-//  * 3. 列名为 "title" 的列的值
+//  * Parses the title value from cell data, priority:
+//  * 1. Value from the Title column
+//  * 2. Value with key "title"
+//  * 3. Value from a column named "title"
 //  *
-//  * @param cells - 行单元格数据对象
-//  * @param lookup - 列查询结构
-//  * @returns 解析出的标题字符串
+//  * @param cells - Row cell data object
+//  * @param lookup - Column lookup structure
+//  * @returns Resolved title string
 //  */
 // function resolveDatabaseTitleValue(
 // 	cells: Record<string, unknown>,
 // 	lookup: DatabaseColumnLookup
 // ): string {
-// 	// 优先使用 Title 列
+// 	// Prefer Title column
 // 	if (lookup.titleCol) {
 // 		const value = cells[lookup.titleCol.name] ?? cells[lookup.titleCol.id];
 // 		if (value !== undefined) return String(value ?? '');
 // 	}
-// 	// 查找 title 别名键
+// 	// Look for title alias key
 // 	for (const [key, value] of Object.entries(cells)) {
 // 		if (isTitleAliasKey(key)) return String(value ?? '');
 // 	}
-// 	// 查找名为 title 的列
+// 	// Look for column named title
 // 	const namedTitleColumn = lookup.colByNameLower.get('title');
 // 	if (namedTitleColumn) {
 // 		const value = cells[namedTitleColumn.name] ?? cells[namedTitleColumn.id];
@@ -711,13 +712,13 @@ function readDatabaseRowTitle(rowBlock: Y.Map<any>): string {
 // }
 
 /**
- * 确保数据库行单元格存在
+ * Ensure database row cells exist
  *
- * 获取指定行的单元格映射，如不存在则创建
+ * Gets the cell map for the specified row, creating it if it doesn't exist
  *
- * @param cellsMap - 数据库的单元格映射
- * @param rowBlockId - 行 block ID
- * @returns 行单元格映射（Y.Map）
+ * @param cellsMap - Database cell map
+ * @param rowBlockId - Row block ID
+ * @returns Row cell map (Y.Map)
  */
 function ensureDatabaseRowCells(cellsMap: Y.Map<any>, rowBlockId: string): Y.Map<any> {
 	const existing = cellsMap.get(rowBlockId);
@@ -728,16 +729,16 @@ function ensureDatabaseRowCells(cellsMap: Y.Map<any>, rowBlockId: string): Y.Map
 }
 
 /**
- * 获取数据库行 block
+ * Get a database row block
  *
- * 验证并获取指定 ID 的行 block，确保它属于当前数据库
+ * Validates and retrieves the row block with the specified ID, ensuring it belongs to the current database
  *
- * @param blocks - 文档的 blocks 映射
- * @param dbBlock - 数据库 block 对象
- * @param databaseBlockId - 数据库 block ID
- * @param rowBlockId - 行 block ID
- * @returns 行 block 对象
- * @throws 如果行不存在或不属于数据库
+ * @param blocks - Document blocks map
+ * @param dbBlock - Database block object
+ * @param databaseBlockId - Database block ID
+ * @param rowBlockId - Row block ID
+ * @returns Row block object
+ * @throws If the row does not exist or does not belong to the database
  */
 function getDatabaseRowBlock(
 	blocks: Y.Map<any>,
@@ -759,11 +760,11 @@ function getDatabaseRowBlock(
 }
 
 /**
- * 通过 ID 查找 block
+ * Find a block by ID
  *
- * @param blocks - blocks 映射
- * @param blockId - block ID
- * @returns 找到的 block 或 null
+ * @param blocks - Blocks map
+ * @param blockId - Block ID
+ * @returns Found block or null
  */
 function findBlockById(blocks: Y.Map<any>, blockId: string): Y.Map<any> | null {
 	const value = blocks.get(blockId);
@@ -771,11 +772,11 @@ function findBlockById(blocks: Y.Map<any>, blockId: string): Y.Map<any> | null {
 }
 
 /**
- * 递归收集所有后代 block ID
+ * Recursively collect all descendant block IDs
  *
- * @param blocks - blocks 映射
- * @param blockIds - 起始 block ID 数组
- * @returns 包含所有后代 block 的 ID 数组
+ * @param blocks - Blocks map
+ * @param blockIds - Starting block ID array
+ * @returns Array containing all descendant block IDs
  */
 function collectDescendantBlockIds(blocks: Y.Map<any>, blockIds: string[]): string[] {
 	const collected: string[] = [];
@@ -792,11 +793,11 @@ function collectDescendantBlockIds(blocks: Y.Map<any>, blockIds: string[]): stri
 }
 
 /**
- * 获取子元素在数组中的索引位置
+ * Get the index of a child element in an array
  *
- * @param array - Y.Array 对象
- * @param item - 要查找的元素
- * @returns 索引位置，未找到返回 -1
+ * @param array - Y.Array object
+ * @param item - Element to find
+ * @returns Index position, or -1 if not found
  */
 function indexOfChild(array: Y.Array<any>, item: string): number {
 	for (let i = 0; i < array.length; i++) {
@@ -808,15 +809,15 @@ function indexOfChild(array: Y.Array<any>, item: string): number {
 }
 
 /**
- * 解析 select 选项 ID
+ * Resolve select option ID
  *
- * 根据选项值查找对应的 ID，如不存在且 createOption 为 true 则创建新选项
+ * Finds the corresponding ID by option value; creates a new option if not found and createOption is true
  *
- * @param col - 列定义
- * @param value - 选项值
- * @param createOption - 是否在选项不存在时创建新选项
- * @returns 选项 ID
- * @throws 选项不存在且 createOption 为 false
+ * @param col - Column definition
+ * @param value - Option value
+ * @param createOption - Whether to create a new option if it doesn't exist
+ * @returns Option ID
+ * @throws If option not found and createOption is false
  */
 function resolveSelectOptionId(
 	col: DatabaseColumnDef,
@@ -831,7 +832,7 @@ function resolveSelectOptionId(
 	if (!createOption) {
 		throw new Error(`Option '${value}' not found in column '${col.name}'`);
 	}
-	// 创建新选项
+	// Create new option
 	const newId = generateId(8, 'opt');
 	const newOption = {
 		id: newId,
@@ -854,23 +855,23 @@ function resolveSelectOptionId(
 }
 
 /**
- * 解码数据库单元格值
+ * Decode a database cell value
  *
- * 将 Affine 内部存储格式转换为可读的 JavaScript 值
+ * Converts Affine's internal storage format to a readable JavaScript value
  *
- * @param col - 列定义
- * @param cellEntry - 单元格条目（Y.Map）
- * @returns 解码后的值
+ * @param col - Column definition
+ * @param cellEntry - Cell entry (Y.Map)
+ * @returns Decoded value
  *
  * @example
- * // rich-text: 返回字符串
- * // number: 返回数字
- * // checkbox: 返回布尔值
- * // select: 返回选项文本
- * // multi-select: 返回选项文本数组
- * // date: 返回 ISO 日期字符串
- * // progress: 返回 0-100 数字
- * // link: 返回 URL 字符串
+ * // rich-text: returns string
+ * // number: returns number
+ * // checkbox: returns boolean
+ * // select: returns option text
+ * // multi-select: returns array of option texts
+ * // date: returns ISO date string
+ * // progress: returns 0-100 number
+ * // link: returns URL string
  */
 function decodeDatabaseCellValue(col: DatabaseColumnDef, cellEntry: Y.Map<any>): any {
 	if (!cellEntry) return null;
@@ -916,26 +917,26 @@ function decodeDatabaseCellValue(col: DatabaseColumnDef, cellEntry: Y.Map<any>):
 }
 
 /**
- * 写入数据库单元格值
+ * Write a database cell value
  *
- * 将 JavaScript 值转换为 Affine 内部存储格式并写入单元格
+ * Converts a JavaScript value to Affine's internal storage format and writes it to the cell
  *
- * @param rowCells - 行单元格映射（Y.Map）
- * @param col - 列定义
- * @param value - 要写入的值
- * @param createOption - 是否为 select/multi-select 类型自动创建新选项
+ * @param rowCells - Row cell map (Y.Map)
+ * @param col - Column definition
+ * @param value - Value to write
+ * @param createOption - Whether to auto-create new options for select/multi-select types
  *
- * @throws 当值格式不符合列类型要求时抛出错误
+ * @throws Throws error when value format doesn't match column type requirements
  *
  * @example
- * // 写入文本
+ * // Write text
  * writeDatabaseCellValue(rowCells, textColumn, "Hello", false);
  *
- * // 写入数字
+ * // Write number
  * writeDatabaseCellValue(rowCells, numberColumn, 42, false);
  *
- * // 写入选项（自动创建选项）
- * writeDatabaseCellValue(rowCells, selectColumn, "进行中", true);
+ * // Write option (auto-create option)
+ * writeDatabaseCellValue(rowCells, selectColumn, "In Progress", true);
  */
 function writeDatabaseCellValue(
 	rowCells: Y.Map<any>,
@@ -1012,19 +1013,19 @@ function writeDatabaseCellValue(
 }
 
 /**
- * 加载数据库文档上下文
+ * Load database document context
  *
- * 初始化操作数据库所需的所有状态：
- * 1. 建立 WebSocket 连接
- * 2. 加载文档快照
- * 3. 构建列查询索引
- * 4. 获取行 ID 列表
+ * Initializes all state needed to operate on the database:
+ * 1. Establish WebSocket connection
+ * 2. Load document snapshot
+ * 3. Build column lookup index
+ * 4. Get row ID list
  *
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @param databaseBlockId - 数据库 block ID
- * @returns 数据库文档上下文
- * @throws 连接失败、文档/数据库不存在等错误
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @param databaseBlockId - Database block ID
+ * @returns Database document context
+ * @throws Connection failure, document/database not found, etc.
  */
 async function loadDatabaseDocContext(
 	workspaceId: string,
@@ -1063,43 +1064,43 @@ export type FilterGroup = { mode: 'and' | 'or'; filters: FilterCondition[] };
 export type FilterParams = FilterCondition[] | FilterGroup;
 
 /**
- * 查找匹配筛选条件的行 IDs
+ * Find row IDs matching filter conditions
  *
- * 根据指定的筛选条件在数据库中查找匹配的行
- * 支持两种筛选格式：
- * - 简单格式：数组形式 [{ column, operator, value }, ...]，默认 AND 逻辑
- * - 高级格式：{ mode: "and"|"or", filters: [...] }
+ * Finds matching rows in the database based on specified filter conditions
+ * Supports two filter formats:
+ * - Simple format: array form [{ column, operator, value }, ...], defaults to AND logic
+ * - Advanced format: { mode: "and"|"or", filters: [...] }
  *
- * 支持的操作符：
- * - eq: 等于
- * - neq: 不等于
- * - contains: 包含
- * - startsWith: 开头匹配
- * - endsWith: 结尾匹配
- * - gt: 大于（仅数字/日期）
- * - gte: 大于等于
- * - lt: 小于
- * - lte: 小于等于
+ * Supported operators:
+ * - eq: equals
+ * - neq: not equals
+ * - contains: contains
+ * - startsWith: starts with
+ * - endsWith: ends with
+ * - gt: greater than (numbers/dates only)
+ * - gte: greater than or equal
+ * - lt: less than
+ * - lte: less than or equal
  *
- * @param cellsMap - 数据库的单元格映射（Y.Map）
- * @param columnDefs - 数据库列定义数组
- * @param filters - 筛选条件（数组或对象格式）
- * @param rowIds - 可选的行 ID 列表，默认搜索所有行
- * @returns 匹配的行 ID 数组
+ * @param cellsMap - Database cell map (Y.Map)
+ * @param columnDefs - Database column definition array
+ * @param filters - Filter conditions (array or object format)
+ * @param rowIds - Optional row ID list, defaults to searching all rows
+ * @returns Array of matching row IDs
  *
  * @example
- * // 简单格式（AND 逻辑）
+ * // Simple format (AND logic)
  * findRowsByFilters(cellsMap, columns, [
- *   { column: '状态', operator: 'eq', value: '进行中' },
- *   { column: '优先级', operator: 'eq', value: '高' }
+ *   { column: 'Status', operator: 'eq', value: 'In Progress' },
+ *   { column: 'Priority', operator: 'eq', value: 'High' }
  * ]);
  *
- * // 高级格式（OR 逻辑）
+ * // Advanced format (OR logic)
  * findRowsByFilters(cellsMap, columns, {
  *   mode: 'or',
  *   filters: [
- *     { column: '状态', operator: 'eq', value: '已完成' },
- *     { column: '状态', operator: 'eq', value: '已取消' }
+ *     { column: 'Status', operator: 'eq', value: 'Completed' },
+ *     { column: 'Status', operator: 'eq', value: 'Cancelled' }
  *   ]
  * });
  */
@@ -1109,7 +1110,7 @@ export function findRowsByFilters(
 	filters: FilterParams,
 	rowIds: string[] = []
 ): string[] {
-	// 解析 filters 格式
+	// Parse filters format
 	let mode: 'and' | 'or' = 'and';
 	let filterList: FilterCondition[];
 
@@ -1120,7 +1121,7 @@ export function findRowsByFilters(
 		filterList = filters as FilterCondition[];
 	}
 
-	// 构建列查找映射（支持列名和列 ID）
+	// Build column lookup map (supports column names and column IDs)
 	const colByName = new Map<string, DatabaseColumnDef>();
 	const colById = new Map<string, DatabaseColumnDef>();
 	const colByNameLower = new Map<string, DatabaseColumnDef>();
@@ -1133,25 +1134,25 @@ export function findRowsByFilters(
 	}
 
 	/**
-	 * 检查单个条件是否匹配
-	 * 根据列类型进行正确的值比较
+	 * Check if a single condition matches
+	 * Performs correct value comparison based on column type
 	 */
 	function matchCondition(
 		filter: { column: string; operator: string; value: string },
 		rowCells: Y.Map<any>
 	): boolean {
-		// 防御性检查
+		// Defensive check
 		if (!filter.column) return false;
 
 		const titleCol = columnDefs.find((c) => c.type === 'title');
 		const isTitleFilter = titleCol && filter.column.toLowerCase() === 'title';
 
-		// title 筛选从 rowBlock 的 prop:text 中获取（暂不支持）
+		// Title filter reads from rowBlock's prop:text (not yet supported)
 		if (isTitleFilter) {
 			return false;
 		}
 
-		// 支持按列名（大小写敏感）、列名小写或列 ID 查找
+		// Supports lookup by column name (case-sensitive), lowercase column name, or column ID
 		const col =
 			colByName.get(filter.column) ||
 			colByNameLower.get(filter.column.toLowerCase()) ||
@@ -1162,11 +1163,11 @@ export function findRowsByFilters(
 		const cellValue = cellEntry ? decodeDatabaseCellValue(col, cellEntry) : null;
 		const filterValue = filter.value;
 
-		// 根据列类型进行正确的比较
+		// Perform correct comparison based on column type
 		switch (col.type) {
 			case 'number':
 			case 'progress': {
-				// 数值类型比较
+				// Numeric type comparison
 				const numCell = Number(cellValue);
 				const numFilter = Number(filterValue);
 				if (Number.isNaN(numFilter)) return false;
@@ -1192,7 +1193,7 @@ export function findRowsByFilters(
 				}
 			}
 			case 'checkbox': {
-				// 布尔类型比较
+				// Boolean type comparison
 				const boolCell = Boolean(cellValue);
 				const boolFilter = filterValue.toLowerCase() === 'true' || filterValue === '1';
 				switch (filter.operator) {
@@ -1209,11 +1210,11 @@ export function findRowsByFilters(
 				}
 			}
 			case 'date': {
-				// 日期类型比较（使用时间戳）
+				// Date type comparison (using timestamps)
 				const dateCell = cellValue ? new Date(cellValue).getTime() : null;
 				const dateFilter = new Date(filterValue).getTime();
 				if (Number.isNaN(dateFilter)) {
-					// 如果筛选值不是有效日期，尝试作为时间戳
+					// If filter value is not a valid date, try as timestamp
 					const tsFilter = Number(filterValue);
 					if (!Number.isNaN(tsFilter)) {
 						switch (filter.operator) {
@@ -1257,9 +1258,9 @@ export function findRowsByFilters(
 				}
 			}
 			case 'select': {
-				// select 类型比较（比较选项 ID）
+				// Select type comparison (comparing option IDs)
 				const selectCell = cellValue as string;
-				// 查找选项 ID
+				// Find option ID
 				const option = col.options.find((o) => o.value === filterValue);
 				const filterOptionId = option?.id || filterValue;
 				switch (filter.operator) {
@@ -1280,9 +1281,9 @@ export function findRowsByFilters(
 				}
 			}
 			case 'multi-select': {
-				// multi-select 类型比较
+				// Multi-select type comparison
 				const multiCell = Array.isArray(cellValue) ? cellValue : [];
-				// 查找选项 ID
+				// Find option ID
 				const option = col.options.find((o) => o.value === filterValue);
 				const filterOptionId = option?.id || filterValue;
 				switch (filter.operator) {
@@ -1313,7 +1314,7 @@ export function findRowsByFilters(
 				}
 			}
 			default: {
-				// 文本类型比较（rich-text, title, link 等）
+				// Text type comparison (rich-text, title, link, etc.)
 				const strCell = String(cellValue ?? '');
 				switch (filter.operator) {
 					case 'eq':
@@ -1345,7 +1346,7 @@ export function findRowsByFilters(
 
 	const matchingRowIds: string[] = [];
 
-	// 如果传入了 rowIds，遍历这些行；否则遍历 cellsMap 的所有 key
+	// If rowIds were provided, iterate those; otherwise iterate all keys in cellsMap
 	const targetRowIds = rowIds.length > 0 ? rowIds : Array.from(cellsMap.keys());
 
 	for (const rowBlockId of targetRowIds) {
@@ -1353,11 +1354,11 @@ export function findRowsByFilters(
 		if (!(rowCells instanceof Y.Map)) continue;
 
 		if (mode === 'and') {
-			// AND: 所有条件都满足
+			// AND: all conditions must match
 			const allMatch = filterList.every((f) => matchCondition(f, rowCells));
 			if (allMatch) matchingRowIds.push(rowBlockId);
 		} else {
-			// OR: 任一条件满足
+			// OR: any condition must match
 			const anyMatch = filterList.some((f) => matchCondition(f, rowCells));
 			if (anyMatch) matchingRowIds.push(rowBlockId);
 		}
@@ -1367,34 +1368,34 @@ export function findRowsByFilters(
 }
 
 // /**
-//  * 添加数据库行
+//  * Add database row
 //  *
-//  * 在指定数据库中添加一个新行，可选择关联到某个文档
+//  * Adds a new row to the specified database, optionally linking to a document
 //  *
-//  * @param params - 参数对象
-//  * @param params.workspace - 工作区 ID（可选，默认使用配置中的工作区）
-//  * @param params.docId - 文档 ID
-//  * @param params.databaseBlockId - 数据库 block ID
-//  * @param params.cells - 行单元格数据，键为列名或列 ID，值为单元格值
-//  * @param params.linkedDocId - 可选的关联文档 ID（创建指向其他文档的链接行）
-//  * @returns 添加结果对象，包含：
-//  *   - added: 是否成功添加
-//  *   - rowBlockId: 新增行的 block ID
-//  *   - databaseBlockId: 数据库 ID
-//  *   - cellCount: 写入的单元格数量
-//  *   - linkedDocId: 关联的文档 ID（如有）
+//  * @param params - Parameter object
+//  * @param params.workspace - Workspace ID (optional, defaults to configured workspace)
+//  * @param params.docId - Document ID
+//  * @param params.databaseBlockId - Database block ID
+//  * @param params.cells - Row cell data, keys are column names or column IDs, values are cell values
+//  * @param params.linkedDocId - Optional linked document ID (creates a link row pointing to another document)
+//  * @returns Result object containing:
+//  *   - added: Whether successfully added
+//  *   - rowBlockId: Block ID of the new row
+//  *   - databaseBlockId: Database ID
+//  *   - cellCount: Number of cells written
+//  *   - linkedDocId: Linked document ID (if any)
 //  *
-//  * @throws 工作区 ID 缺失、文档/数据库不存在、列不存在等错误
+//  * @throws Missing workspace ID, document/database not found, column not found, etc.
 //  *
 //  * @example
-//  * // 添加普通行
+//  * // Add a normal row
 //  * await addDatabaseRowHandler({
 //  *   docId: 'abc123',
 //  *   databaseBlockId: 'db456',
-//  *   cells: { '名称': '新产品', '状态': '进行中', '优先级': '高' }
+//  *   cells: { 'Name': 'New Product', 'Status': 'In Progress', 'Priority': 'High' }
 //  * });
 //  *
-//  * // 添加关联文档的行
+//  * // Add a linked document row
 //  * await addDatabaseRowHandler({
 //  *   docId: 'abc123',
 //  *   databaseBlockId: 'db456',
@@ -1469,21 +1470,21 @@ export function findRowsByFilters(
 // }
 
 // /**
-//  * 删除数据库行
+//  * Delete database row
 //  *
-//  * 从数据库中删除指定的行及其所有后代 block
+//  * Deletes the specified row and all its descendant blocks from the database
 //  *
-//  * @param params - 参数对象
-//  * @param params.workspace - 工作区 ID（可选）
-//  * @param params.docId - 文档 ID
-//  * @param params.databaseBlockId - 数据库 block ID
-//  * @param params.rowBlockId - 要删除的行 block ID
-//  * @returns 删除结果对象，包含：
-//  *   - deleted: 是否成功删除
-//  *   - rowBlockId: 被删除的行 ID
-//  *   - descendantCount: 删除的后代 block 数量
+//  * @param params - Parameter object
+//  * @param params.workspace - Workspace ID (optional)
+//  * @param params.docId - Document ID
+//  * @param params.databaseBlockId - Database block ID
+//  * @param params.rowBlockId - Row block ID to delete
+//  * @returns Result object containing:
+//  *   - deleted: Whether successfully deleted
+//  *   - rowBlockId: Deleted row ID
+//  *   - descendantCount: Number of descendant blocks deleted
 //  *
-//  * @throws 行不存在或不属于数据库
+//  * @throws Row does not exist or does not belong to the database
 //  */
 // export async function deleteDatabaseRowHandler(params: {
 // 	workspace?: string;
@@ -1537,38 +1538,38 @@ export function findRowsByFilters(
 // }
 
 /**
- * 移除数据库行（支持筛选匹配批量删除）
+ * Remove database rows (supports batch delete via filter matching)
  *
- * 根据指定条件删除数据库中的行，支持单行删除或批量筛选删除
+ * Deletes rows from the database based on specified conditions, supporting single row or batch filter delete
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @param params.rowBlockId - 要删除的单个行 block ID（与 filters 二选一）
- * @param params.filters - 筛选条件数组，用于批量匹配删除
- *   - 格式：[{ column: string, operator: string, value: string }]
- *   - operator 支持：eq（等于）、neq（不等于）、contains（包含）、startsWith（开头）、endsWith（结尾）
- * @returns 删除结果对象，包含：
- *   - deleted: 是否成功删除
- *   - deletedIds: 被删除的行 ID 数组
- *   - deletedCount: 删除的行数量
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @param params.rowBlockId - Single row block ID to delete (mutually exclusive with filters)
+ * @param params.filters - Filter condition array for batch matching and deletion
+ *   - Format: [{ column: string, operator: string, value: string }]
+ *   - Supported operators: eq (equals), neq (not equals), contains, startsWith, endsWith
+ * @returns Result object containing:
+ *   - deleted: Whether successfully deleted
+ *   - deletedIds: Array of deleted row IDs
+ *   - deletedCount: Number of rows deleted
  *
- * @throws 无效的筛选条件或删除失败
+ * @throws Invalid filter conditions or deletion failure
  *
  * @example
- * // 删除单个行
+ * // Delete a single row
  * await removeDatabaseRowHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
  *   rowBlockId: 'row789'
  * });
  *
- * // 批量删除匹配的行
+ * // Batch delete matching rows
  * await removeDatabaseRowHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
- *   filters: [{ column: '状态', operator: 'eq', value: '已完成' }]
+ *   filters: [{ column: 'Status', operator: 'eq', value: 'Completed' }]
  * });
  */
 export async function removeDatabaseRowHandler(params: {
@@ -1585,7 +1586,7 @@ export async function removeDatabaseRowHandler(params: {
 		let deletedCount = 0;
 		let deletedIds: string[] = [];
 
-		// 如果有筛选条件，找出匹配的行并删除
+		// If filter conditions exist, find matching rows and delete
 		if (params.filters) {
 			const matchingRowIds = findRowsByFilters(
 				ctx.cellsMap,
@@ -1618,11 +1619,11 @@ export async function removeDatabaseRowHandler(params: {
 					deletedIds.push(rowId);
 					deletedCount++;
 				} catch {
-					// 忽略单个删除错误
+					// Ignore individual deletion errors
 				}
 			}
 		} else if (params.rowBlockId) {
-			// 没有筛选条件，删除单行
+			// No filter conditions, delete single row
 			const rowBlock = getDatabaseRowBlock(
 				ctx.blocks,
 				ctx.dbBlock,
@@ -1648,7 +1649,7 @@ export async function removeDatabaseRowHandler(params: {
 			deletedIds = [params.rowBlockId];
 			deletedCount = 1;
 		} else {
-			throw new Error('必须指定 row-id 或 filter 参数');
+			throw new Error('Must specify either row-id or filter parameter');
 		}
 
 		await updateYDoc(ctx.socket, workspaceId, params.docId, ctx.doc, ctx.prevSV);
@@ -1663,36 +1664,36 @@ export async function removeDatabaseRowHandler(params: {
 }
 
 /**
- * 查询数据库
+ * Query database
  *
- * 查询数据库中的行数据，支持两种输出格式：
- * - rows 格式：简单的行数据数组
- * - full/export 格式：完整的数据库结构（包含标题、列定义、数据）
+ * Queries row data in the database, supports two output formats:
+ * - rows format: simple row data array
+ * - full/export format: complete database structure (including title, column definitions, data)
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @param params.rowBlockIds - 要查询的行 ID 数组（可选，默认查询所有行）
- * @param params.columns - 要返回的列名数组（可选，默认返回所有列）
- * @param params.filters - 筛选条件数组，用于过滤行
- * @param params.full - 是否返回完整格式（包含列定义等元数据）
- * @returns 查询结果
- *   - rows 格式：{ rows: [{ id, title, cells: {...}}, ...] }
- *   - full 格式：{ title, columns: [{name, type, options}], data: [{title, col1, col2}, ...] }
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @param params.rowBlockIds - Row ID array to query (optional, defaults to all rows)
+ * @param params.columns - Column name array to return (optional, defaults to all columns)
+ * @param params.filters - Filter condition array for filtering rows
+ * @param params.full - Whether to return full format (includes column definitions and other metadata)
+ * @returns Query result
+ *   - rows format: { rows: [{ id, title, cells: {...}}, ...] }
+ *   - full format: { title, columns: [{name, type, options}], data: [{title, col1, col2}, ...] }
  *
  * @example
- * // 查询所有行（简单格式）
+ * // Query all rows (simple format)
  * await queryDatabaseHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456'
  * });
  *
- * // 筛选并返回完整格式
+ * // Filter and return full format
  * await queryDatabaseHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
- *   filters: [{ column: '状态', operator: 'eq', value: '进行中' }],
+ *   filters: [{ column: 'Status', operator: 'eq', value: 'In Progress' }],
  *   full: true
  * });
  */
@@ -1709,9 +1710,9 @@ export async function queryDatabaseHandler(params: {
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
-		// 处理 output 格式
+		// Handle output format
 		if (params.full) {
-			// 导出格式
+			// Export format
 			const titleText = ctx.dbBlock.get('prop:title');
 			let title = '';
 			if (titleText instanceof Y.Text) {
@@ -1766,31 +1767,31 @@ export async function queryDatabaseHandler(params: {
 			};
 		}
 
-		// 默认 rows 格式
+		// Default rows format
 		return readDatabaseCellsHandler(params);
 	} finally {
 	}
 }
 
 /**
- * 读取数据库单元格
+ * Read database cells
  *
- * 读取指定数据库中的单元格数据，返回行和列的详细信息
+ * Reads cell data from the specified database, returning detailed row and column information
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @param params.rowBlockIds - 要读取的行 ID 数组（可选，默认读取所有行）
- * @param params.columns - 要读取的列名数组（可选，默认读取所有列）
- * @param params.filters - 筛选条件数组
- * @returns 读取结果，格式：{ rows: [{ id, title, cells: { colId: { value, type } } }] }
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @param params.rowBlockIds - Row ID array to read (optional, defaults to all rows)
+ * @param params.columns - Column name array to read (optional, defaults to all columns)
+ * @param params.filters - Filter condition array
+ * @returns Read result, format: { rows: [{ id, title, cells: { colId: { value, type } } }] }
  *
  * @example
  * await readDatabaseCellsHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
- *   columns: ['名称', '状态']
+ *   columns: ['Name', 'Status']
  * });
  */
 export async function readDatabaseCellsHandler(params: {
@@ -1822,7 +1823,7 @@ export async function readDatabaseCellsHandler(params: {
 			: ctx.columnDefs;
 		const requestedColumnIds = new Set(requestedColumns.map((col) => col.id));
 
-		// 应用筛选
+		// Apply filters
 		if (params.filters) {
 			requestedRows = findRowsByFilters(
 				ctx.cellsMap,
@@ -1867,22 +1868,22 @@ export async function readDatabaseCellsHandler(params: {
 }
 
 /**
- * 读取数据库列定义
+ * Read database column definitions
  *
- * 获取数据库的完整结构信息，包括列定义、视图配置等
+ * Gets the complete structure info of the database, including column definitions, view configurations, etc.
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @returns 列定义结果，包含：
- *   - databaseBlockId: 数据库 ID
- *   - title: 数据库标题
- *   - rowCount: 行数量
- *   - columnCount: 列数量
- *   - titleColumnId: Title 列 ID
- *   - columns: 列定义数组 [{ id, name, type, options }]
- *   - views: 视图定义数组
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @returns Column definition result containing:
+ *   - databaseBlockId: Database ID
+ *   - title: Database title
+ *   - rowCount: Row count
+ *   - columnCount: Column count
+ *   - titleColumnId: Title column ID
+ *   - columns: Column definition array [{ id, name, type, options }]
+ *   - views: View definition array
  *
  * @example
  * await readDatabaseColumnsHandler({
@@ -1928,39 +1929,39 @@ export async function readDatabaseColumnsHandler(params: {
 }
 
 /**
- * 批量更新数据库行
+ * Batch update database rows
  *
- * 更新数据库中的行数据，支持单行更新或批量筛选更新
+ * Updates row data in the database, supporting single row or batch filter update
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @param params.cells - 要更新的单元格数据，键为列名或列 ID
- * @param params.rowBlockId - 要更新的单个行 ID（与 filters 二选一）
- * @param params.filters - 筛选条件数组，用于批量匹配更新
- * @param params.createOption - 是否为 select 类型自动创建新选项，默认 true
- * @param params.linkedDocId - 可选的关联文档 ID（将行转换为指向文档的链接）
- * @returns 更新结果，包含：
- *   - updated: 是否成功更新
- *   - updatedIds: 被更新的行 ID 数组
- *   - updatedCount: 更新的行数量
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @param params.cells - Cell data to update, keys are column names or column IDs
+ * @param params.rowBlockId - Single row ID to update (mutually exclusive with filters)
+ * @param params.filters - Filter condition array for batch matching and updating
+ * @param params.createOption - Whether to auto-create new options for select type, defaults to true
+ * @param params.linkedDocId - Optional linked document ID (converts the row to a link pointing to a document)
+ * @returns Update result containing:
+ *   - updated: Whether successfully updated
+ *   - updatedIds: Array of updated row IDs
+ *   - updatedCount: Number of rows updated
  *
  * @example
- * // 更新单个行
+ * // Update a single row
  * await updateDatabaseRowHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
  *   rowBlockId: 'row789',
- *   cells: { '状态': '已完成', '进度': 100 }
+ *   cells: { 'Status': 'Completed', 'Progress': 100 }
  * });
  *
- * // 批量更新匹配的行
+ * // Batch update matching rows
  * await updateDatabaseRowHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
- *   filters: [{ column: '状态', operator: 'eq', value: '进行中' }],
- *   cells: { '状态': '已完成' }
+ *   filters: [{ column: 'Status', operator: 'eq', value: 'In Progress' }],
+ *   cells: { 'Status': 'Completed' }
  * });
  */
 export async function updateDatabaseRowHandler(params: {
@@ -1980,7 +1981,7 @@ export async function updateDatabaseRowHandler(params: {
 		let updatedCount = 0;
 		let updatedIds: string[] = [];
 
-		// 如果有筛选条件，找出匹配的行并更新
+		// If filter conditions exist, find matching rows and update
 		if (params.filters) {
 			const matchingRowIds = findRowsByFilters(
 				ctx.cellsMap,
@@ -2025,11 +2026,11 @@ export async function updateDatabaseRowHandler(params: {
 					updatedIds.push(rowId);
 					updatedCount++;
 				} catch {
-					// 忽略单个更新错误
+					// Ignore individual update errors
 				}
 			}
 		} else if (params.rowBlockId) {
-			// 没有筛选条件，更新单行
+			// No filter conditions, update single row
 			const rowBlock = getDatabaseRowBlock(
 				ctx.blocks,
 				ctx.dbBlock,
@@ -2066,7 +2067,7 @@ export async function updateDatabaseRowHandler(params: {
 			updatedIds = [params.rowBlockId];
 			updatedCount = 1;
 		} else {
-			throw new Error('必须指定 row-id 或 filter 参数');
+			throw new Error('Must specify either row-id or filter parameter');
 		}
 
 		await updateYDoc(ctx.socket, workspaceId, params.docId, ctx.doc, ctx.prevSV);
@@ -2081,19 +2082,19 @@ export async function updateDatabaseRowHandler(params: {
 }
 
 /**
- * 列出文档中的数据库
+ * List databases in a document
  *
- * 获取指定文档中所有数据库的基本信息
+ * Gets basic info for all databases in the specified document
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @returns 列出结果，包含：
- *   - databases: 数据库数组
- *     - id: 数据库 block ID
- *     - title: 数据库标题
- *     - rowCount: 行数量
- *     - columnCount: 列数量
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @returns List result containing:
+ *   - databases: Database array
+ *     - id: Database block ID
+ *     - title: Database title
+ *     - rowCount: Row count
+ *     - columnCount: Column count
  *
  * @example
  * await listDatabasesHandler({
@@ -2128,7 +2129,7 @@ export async function listDatabasesHandler(params: {
 			const flavour = block.get('sys:flavour');
 			if (flavour !== 'affine:database') continue;
 
-			// 读取数据库标题
+			// Read database title
 			const titleText = block.get('prop:title');
 			let title = '';
 			if (titleText instanceof Y.Text) {
@@ -2137,14 +2138,14 @@ export async function listDatabasesHandler(params: {
 				title = titleText.map((d: any) => d.insert || '').join('');
 			}
 
-			// 读取行列数
+			// Read row and column counts
 			const columns = readColumnDefs(block);
 			const children = block.get('sys:children');
 			const rowCount = childIdsFrom(children).length;
 
 			databases.push({
 				id: blockId,
-				title: title || '未命名数据库',
+				title: title || 'Untitled Database',
 				rowCount,
 				columnCount: columns.length
 			});
@@ -2156,44 +2157,44 @@ export async function listDatabasesHandler(params: {
 }
 
 /**
- * 创建数据库
+ * Create database
  *
- * 在指定文档中创建新数据库，或创建包含数据库的新文档
- * 支持从数据推断列定义并导入初始数据
+ * Creates a new database in the specified document, or creates a new document containing a database
+ * Supports inferring column definitions from data and importing initial data
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 目标文档 ID（不传则创建新文档）
- * @param params.title - 数据库/文档标题
- * @param params.columns - 预定义的列数组（可选）
- *   - 格式：[{ name: string, type: string, width?: number, options?: string[] }]
- * @param params.viewMode - 视图模式：'table' 或 'kanban'（默认 'table'）
- * @param params.data - 初始数据（可选）
- *   - 支持数组格式：[{col1: val1}, ...]
- *   - 支持对象格式：{title, data: [], columns: []}
- *   - 数据中的列类型会自动推断
- * @returns 创建结果，包含：
- *   - created: 是否成功创建
- *   - docId: 文档 ID
- *   - databaseBlockId: 数据库 block ID
- *   - title: 数据库标题
- *   - importedRows: 导入的行数
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Target document ID (creates a new document if not provided)
+ * @param params.title - Database/document title
+ * @param params.columns - Predefined column array (optional)
+ *   - Format: [{ name: string, type: string, width?: number, options?: string[] }]
+ * @param params.viewMode - View mode: 'table' or 'kanban' (defaults to 'table')
+ * @param params.data - Initial data (optional)
+ *   - Supports array format: [{col1: val1}, ...]
+ *   - Supports object format: {title, data: [], columns: []}
+ *   - Column types in data are automatically inferred
+ * @returns Creation result containing:
+ *   - created: Whether successfully created
+ *   - docId: Document ID
+ *   - databaseBlockId: Database block ID
+ *   - title: Database title
+ *   - importedRows: Number of imported rows
  *
- * @throws 工作区 ID 缺失等错误
+ * @throws Missing workspace ID, etc.
  *
  * @example
- * // 在现有文档中创建数据库
+ * // Create database in an existing document
  * await createDatabaseHandler({
  *   docId: 'abc123',
- *   title: '项目列表',
- *   columns: [{ name: '名称', type: 'rich-text' }, { name: '状态', type: 'select', options: ['进行中', '已完成'] }]
+ *   title: 'Project List',
+ *   columns: [{ name: 'Name', type: 'rich-text' }, { name: 'Status', type: 'select', options: ['In Progress', 'Completed'] }]
  * });
  *
- * // 创建新文档并包含数据库（带数据）
+ * // Create new document with database (with data)
  * await createDatabaseHandler({
- *   title: '销售数据',
+ *   title: 'Sales Data',
  *   viewMode: 'table',
- *   data: [{ product: '产品A', sales: 100 }, { product: '产品B', sales: 200 }]
+ *   data: [{ product: 'Product A', sales: 100 }, { product: 'Product B', sales: 200 }]
  * });
  */
 export async function createDatabaseHandler(params: {
@@ -2213,19 +2214,19 @@ export async function createDatabaseHandler(params: {
 
 	const isKanban = params.viewMode === 'kanban';
 	if (isKanban) {
-		throw new Error('暂不支持看板模式');
+		throw new Error('Kanban mode is not yet supported');
 	}
 
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 如果没有指定 docId，创建新文档
+		// If no docId is specified, create a new document
 		if (!targetDocId) {
 			const newDocId = generateId(12, 'doc');
 			const newDoc = new Y.Doc();
 			const prevSV = Y.encodeStateVector(newDoc);
 
-			// 创建 page block
+			// Create page block
 			const pageBlockId = generateId(12, 'page');
 			const pageBlock = new Y.Map<any>();
 			pageBlock.set('sys:id', pageBlockId);
@@ -2234,12 +2235,12 @@ export async function createDatabaseHandler(params: {
 			pageBlock.set('sys:parent', null);
 			pageBlock.set('sys:children', new Y.Array<string>());
 
-			// 设置文档标题
+			// Set document title
 			const titleText = new Y.Text();
-			titleText.insert(0, params.title || '未命名数据库');
+			titleText.insert(0, params.title || 'Untitled Database');
 			pageBlock.set('prop:title', titleText);
 
-			// 添加 note block
+			// Add note block
 			const noteId = generateId(12, 'note');
 			const noteBlock = new Y.Map<any>();
 			noteBlock.set('sys:id', noteId);
@@ -2256,7 +2257,7 @@ export async function createDatabaseHandler(params: {
 			background.set('dark', '#252525');
 			noteBlock.set('prop:background', background);
 
-			// 添加 surface block
+			// Add surface block
 			const surfaceId = generateId(12, 'surf');
 			const surfaceBlock = new Y.Map<any>();
 			surfaceBlock.set('sys:id', surfaceId);
@@ -2278,16 +2279,16 @@ export async function createDatabaseHandler(params: {
 			pageChildren.push([surfaceId]);
 			pageChildren.push([noteId]);
 
-			// 添加到 workspace meta（这样 Affine UI 才能看到文档）
+			// Add to workspace meta (so Affine UI can see the document)
 			const meta = newDoc.getMap('meta');
 			meta.set('id', newDocId);
-			meta.set('title', params.title || '未命名数据库');
+			meta.set('title', params.title || 'Untitled Database');
 			meta.set('createDate', Date.now());
 			meta.set('tags', new Y.Array<string>());
 
 			await updateYDoc(socket, workspaceId, newDocId, newDoc, prevSV);
 
-			// 更新 workspace 的 pages 列表
+			// Update workspace pages list
 			const { doc: wsDoc, prevSV: wsPrevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 			const wsMeta = wsDoc.getMap('meta');
 			let pages = wsMeta.get('pages') as Y.Array<Y.Map<any>> | undefined;
@@ -2297,7 +2298,7 @@ export async function createDatabaseHandler(params: {
 			}
 			const entry = new Y.Map();
 			entry.set('id', newDocId);
-			entry.set('title', params.title || '未命名数据库');
+			entry.set('title', params.title || 'Untitled Database');
 			entry.set('createDate', Date.now());
 			entry.set('tags', new Y.Array<string>());
 			pages.push([entry as any]);
@@ -2306,30 +2307,30 @@ export async function createDatabaseHandler(params: {
 			targetDocId = newDocId;
 		}
 
-		// 获取目标文档
+		// Get target document
 		const { doc: doc, exists: snapshotExists, prevSV: prevSV } = await fetchYDoc(socket, workspaceId, targetDocId);
 		if (!snapshotExists) {
 			throw new Error('Document not found');
 		}
 		const blocks = doc.getMap('blocks') as Y.Map<any>;
 
-		// 生成数据库 block
+		// Generate database block
 		const dbBlockId = generateId(12, 'db');
 		const dbBlock = createBlockBase(dbBlockId, 'affine:database', null);
-		dbBlock.set('prop:title', makeText(params.title || '未命名数据库'));
+		dbBlock.set('prop:title', makeText(params.title || 'Untitled Database'));
 		dbBlock.set('prop:cells', new Y.Map<any>());
 		dbBlock.set('prop:comments', undefined);
 
-		// 创建列定义
+		// Create column definitions
 		const columns = new Y.Array<any>();
 		const titleColumnId = generateId(8, 'col');
 		const titleColDef = createColumnDefinition(titleColumnId, 'Title', 'title', 250);
 		columns.push([titleColDef]);
 
-		// 记录包含字段的属性
+		// Track field properties
 		const colIdMap: Map<string, string> = new Map();
 
-		// 添加自定义列
+		// Add custom columns
 		if (params.columns) {
 			for (const col of params.columns) {
 				const colId = generateId(8, 'col');
@@ -2346,11 +2347,11 @@ export async function createDatabaseHandler(params: {
 			}
 		}
 
-		// 创建视图列
+		// Create view columns
 		const viewColumns = new Y.Array<any>();
 		viewColumns.push([createViewColumn(titleColumnId, false, 'title')]);
 
-		// 为自定义列添加视图列
+		// Add view columns for custom columns
 		for (const col of params.columns || []) {
 			const colId = colIdMap.get(col.name);
 			if (colId) {
@@ -2379,7 +2380,7 @@ export async function createDatabaseHandler(params: {
 		dbBlock.set('prop:columns', columns);
 		dbBlock.set('prop:views', views);
 
-		// 如果有数据，从数据中推断列类型并创建列，然后导入数据
+		// If data is provided, infer column types from data and create columns, then import data
 		let importedRows = 0;
 
 		if (params.data) {
@@ -2393,16 +2394,16 @@ export async function createDatabaseHandler(params: {
 					dataToImport = parsedData.data;
 				}
 			} catch {
-				// 忽略解析错误
+				// Ignore parse errors
 			}
 
 			if (dataToImport.length > 0) {
-				// 检查数据中是否存在 title 字段
+				// Check if data contains a title field
 				const hasTitleField = dataToImport.some(
 					(row) => row && typeof row === 'object' && 'Title' in row
 				);
 
-				// 从数据中推断列类型
+				// Infer column types from data
 				const allKeys = new Set<string>();
 				for (const row of dataToImport) {
 					if (row && typeof row === 'object') {
@@ -2410,10 +2411,10 @@ export async function createDatabaseHandler(params: {
 					}
 				}
 
-				// 只有当数据中没有 title 字段时，才排除 title（稍后会将第一列作为 title）
-				// 如果有 title 字段，保留所有列
+				// Only exclude title when data has no title field (first column will be used as title later)
+				// If title field exists, keep all columns
 
-				// 推断每列的类型
+				// Infer type for each column
 				const inferredColumns: Array<{
 					name: string;
 					type: string;
@@ -2429,10 +2430,10 @@ export async function createDatabaseHandler(params: {
 					let inferredType = 'rich-text';
 					let options: Array<{ id?: string; value: string; color?: string }> | undefined;
 
-					// 检测数组（多选）
+					// Detect arrays (multi-select)
 					if (values.length > 0 && values.every((v) => Array.isArray(v))) {
 						inferredType = 'multi-select';
-						// 收集所有唯一选项
+						// Collect all unique options
 						const allOptions = new Set<string>();
 						values.forEach((v: any) => {
 							if (Array.isArray(v)) {
@@ -2441,25 +2442,25 @@ export async function createDatabaseHandler(params: {
 						});
 						options = Array.from(allOptions).map((v) => ({ value: v }));
 					}
-					// 检测布尔值
+					// Detect booleans
 					else if (values.length > 0 && values.every((v) => typeof v === 'boolean')) {
 						inferredType = 'checkbox';
 					}
-					// 检测数字
+					// Detect numbers
 					else if (
 						values.length > 0 &&
 						values.every((v) => typeof v === 'number' || !isNaN(Number(v)))
 					) {
 						inferredType = 'number';
 					}
-					// 检测日期
+					// Detect dates
 					else if (
 						values.length > 0 &&
 						values.every((v) => !isNaN(Date.parse(String(v))) || typeof v === 'number')
 					) {
 						inferredType = 'date';
 					}
-					// 检测进度（0-100 的数字）
+					// Detect progress (numbers 0-100)
 					else if (
 						values.length > 0 &&
 						values.every((v) => {
@@ -2471,7 +2472,7 @@ export async function createDatabaseHandler(params: {
 					) {
 						inferredType = 'progress';
 					}
-					// 检测 URL
+					// Detect URLs
 					else if (
 						values.length > 0 &&
 						values.every(
@@ -2482,12 +2483,12 @@ export async function createDatabaseHandler(params: {
 					) {
 						inferredType = 'link';
 					}
-					// 检测选项
+					// Detect options
 					else if (values.length > 0) {
 						const uniqueValues = new Set(values.map(String));
 						if (uniqueValues.size <= 20 && uniqueValues.size < values.length * 0.5) {
 							inferredType = 'select';
-							// 转换为对象数组
+							// Convert to object array
 							options = Array.from(uniqueValues).map((v) => ({ value: v }));
 						}
 					}
@@ -2495,22 +2496,22 @@ export async function createDatabaseHandler(params: {
 					inferredColumns.push({ name: key, type: inferredType, options });
 				}
 
-				// 确定 title 列：如果数据中没有 title 字段，则使用第一列作为 title
+				// Determine title column: if data has no title field, use the first column as title
 				let titleKey: string | null = null;
 				if (!hasTitleField && inferredColumns.length > 0) {
 					titleKey = inferredColumns[0].name;
 				}
 
-				// 创建推断出的列定义
+				// Create inferred column definitions
 				for (const col of inferredColumns) {
-					// 跳过 title 列
+					// Skip title column
 					if (titleKey && col.name === titleKey) continue;
 					if (colIdMap.has(col.name)) continue;
 
 					const colId = generateId(8, 'col');
 					colIdMap.set(col.name, colId);
 
-					// 提取选项值数组
+					// Extract option value array
 					const optionValues = col.options?.map((o) => (o as any)?.value || String(o));
 
 					const colDef = createColumnDefinition(
@@ -2522,10 +2523,10 @@ export async function createDatabaseHandler(params: {
 					);
 					columns.push([colDef]);
 
-					// 添加视图列
+					// Add view columns
 					viewColumns.push([createViewColumn(colId, false, col.type)]);
 
-					// 更新选项为对象格式（包含 id）
+					// Update options to object format (with id)
 					if (col.options?.length && optionValues) {
 						const colDefData = colDef.get('data');
 						if (colDefData instanceof Y.Map) {
@@ -2551,14 +2552,14 @@ export async function createDatabaseHandler(params: {
 					dbBlock.set('sys:children', dbChildren);
 				}
 
-				// 获取 cells map（如果不存在则创建）
+				// Get cells map (create if not exists)
 				let cells = dbBlock.get('prop:cells') as Y.Map<any>;
 				if (!(cells instanceof Y.Map)) {
 					cells = new Y.Map<any>();
 					dbBlock.set('prop:cells', cells);
 				}
 
-				// 创建行并填充数据
+				// Create rows and populate data
 				for (const rowData of dataToImport) {
 					if (!rowData || typeof rowData !== 'object') continue;
 
@@ -2571,9 +2572,9 @@ export async function createDatabaseHandler(params: {
 					rowBlock.set('sys:children', new Y.Array<string>());
 					rowBlock.set('prop:type', 'text');
 
-					// 从行数据中提取 title
-					// 如果数据中有 title 字段，使用 title 字段值
-					// 如果没有 title 字段，使用第一列的值作为 title
+					// Extract title from row data
+					// If data has a title field, use the title field value
+					// If no title field, use the first column value as title
 					let titleValue = '';
 					if ('title' in rowData && rowData.title !== undefined) {
 						titleValue = String(rowData.title);
@@ -2582,18 +2583,18 @@ export async function createDatabaseHandler(params: {
 					}
 					rowBlock.set('prop:text', makeText(titleValue));
 
-					// 先把 rowBlock 添加到 blocks
+					// Add rowBlock to blocks first
 					blocks.set(rowBlockId, rowBlock);
 
-					// 添加到 db 的 children
+					// Add to db children
 					dbChildren.push([rowBlockId]);
 
-					// 创建行单元格
+					// Create row cells
 					const rowCells = new Y.Map<any>();
 
-					// 为每个推断列设置单元格值（跳过 title 列）
+					// Set cell values for each inferred column (skip title column)
 					for (const colInfo of inferredColumns) {
-						// 跳过 title 列
+						// Skip title column
 						if (titleKey && colInfo.name === titleKey) continue;
 
 						const colId = colIdMap.get(colInfo.name);
@@ -2602,7 +2603,7 @@ export async function createDatabaseHandler(params: {
 						cellData.set('columnId', colId);
 						const value = rowData[colInfo.name];
 						if (value !== undefined && value !== null) {
-							// 根据类型设置值
+							// Set value based on type
 							if (colInfo.type === 'checkbox') {
 								cellData.set('value', value ? true : false);
 							} else if (colInfo.type === 'number') {
@@ -2619,13 +2620,13 @@ export async function createDatabaseHandler(params: {
 									);
 								}
 							} else if (colInfo.type === 'select' && colInfo.options?.length) {
-								// 找到对应的 option ID，如果不存在则创建新选项
+								// Find corresponding option ID, create new option if not found
 								const strValue = String(value);
 								let opt = colInfo.options.find(
 									(o) => (o as any).value === strValue
 								);
 								if (!opt) {
-									// 创建新选项
+									// Create new option
 									const optId = generateId(8, 'opt');
 									opt = {
 										id: optId,
@@ -2638,7 +2639,7 @@ export async function createDatabaseHandler(params: {
 								}
 								cellData.set('value', (opt as any).id);
 							} else if (colInfo.type === 'multi-select' && colInfo.options?.length) {
-								// 多选：值为数组
+								// Multi-select: value is array
 								const values = Array.isArray(value) ? value : [value];
 								const optionIds = new Y.Array<string>();
 								for (const v of values) {
@@ -2670,14 +2671,14 @@ export async function createDatabaseHandler(params: {
 									cellData.set('value', clamped);
 								}
 							} else {
-								// rich-text, link 等类型使用 makeText
+								// rich-text, link, etc. use makeText
 								cellData.set('value', makeText(String(value)));
 							}
 						}
 						rowCells.set(colId, cellData);
 					}
 
-					// 添加到 cells map
+					// Add to cells map
 					cells.set(rowBlockId, rowCells);
 
 					importedRows++;
@@ -2685,10 +2686,10 @@ export async function createDatabaseHandler(params: {
 			}
 		}
 
-		// 添加到文档
+		// Add to document
 		blocks.set(dbBlockId, dbBlock);
 
-		// 找到 page block 并添加子元素
+		// Find page block and add child
 		let pageBlockId: string | null = null;
 		for (const [id, block] of blocks.entries()) {
 			if (block instanceof Y.Map && block.get('sys:flavour') === 'affine:page') {
@@ -2707,14 +2708,14 @@ export async function createDatabaseHandler(params: {
 			pageChildren.push([dbBlockId]);
 		}
 
-		// 推送更新
+		// Push update
 		await updateYDoc(socket, workspaceId, targetDocId, doc, prevSV);
 
 		return {
 			created: true,
 			docId: targetDocId,
 			databaseBlockId: dbBlockId,
-			title: params.title || '未命名数据库',
+			title: params.title || 'Untitled Database',
 			importedRows
 		};
 	} finally {
@@ -2722,18 +2723,18 @@ export async function createDatabaseHandler(params: {
 }
 
 /**
- * 删除数据库
+ * Delete database
  *
- * 从文档中删除指定的数据库块及其所有关联的行数据
+ * Deletes the specified database block and all its associated row data from the document
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 要删除的数据库 block ID
- * @returns 删除结果，包含：
- *   - deleted: 是否成功删除
- *   - databaseBlockId: 被删除的数据库 ID
- *   - deletedBlockCount: 删除的 block 数量
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID to delete
+ * @returns Deletion result containing:
+ *   - deleted: Whether successfully deleted
+ *   - databaseBlockId: Deleted database ID
+ *   - deletedBlockCount: Number of blocks deleted
  *
  * @example
  * await deleteDatabaseHandler({
@@ -2758,7 +2759,7 @@ export async function deleteDatabaseHandler(params: {
 		}
 		const blocks = doc.getMap('blocks') as Y.Map<any>;
 
-		// 检查数据库是否存在
+		// Check if database exists
 		const dbBlock = blocks.get(params.databaseBlockId);
 		if (!dbBlock || !(dbBlock instanceof Y.Map)) {
 			throw new Error(`Database block '${params.databaseBlockId}' not found`);
@@ -2767,10 +2768,10 @@ export async function deleteDatabaseHandler(params: {
 			throw new Error(`Block '${params.databaseBlockId}' is not a database`);
 		}
 
-		// 收集所有需要删除的 block ID（包括行和子块）
+		// Collect all block IDs to delete (including rows and sub-blocks)
 		const blocksToDelete: string[] = [params.databaseBlockId];
 
-		// 获取数据库的所有子元素（行）
+		// Get all children of the database (rows)
 		const dbChildren = dbBlock.get('sys:children');
 		if (dbChildren instanceof Y.Array) {
 			for (const entry of dbChildren) {
@@ -2782,12 +2783,12 @@ export async function deleteDatabaseHandler(params: {
 			}
 		}
 
-		// 删除所有相关 block
+		// Delete all related blocks
 		for (const blockId of blocksToDelete) {
 			blocks.delete(blockId);
 		}
 
-		// 从 page block 中移除数据库引用
+		// Remove database reference from page block
 		let pageBlockId: string | null = null;
 		for (const [id, block] of blocks.entries()) {
 			if (block instanceof Y.Map && block.get('sys:flavour') === 'affine:page') {
@@ -2814,7 +2815,7 @@ export async function deleteDatabaseHandler(params: {
 			}
 		}
 
-		// 推送更新
+		// Push update
 		await updateYDoc(socket, workspaceId, params.docId, doc, prevSV);
 
 		return {
@@ -2826,28 +2827,28 @@ export async function deleteDatabaseHandler(params: {
 }
 
 /**
- * 插入数据到数据库
+ * Insert data into database
  *
- * 向现有数据库添加新行数据，支持自动推断新列并创建
+ * Adds new row data to an existing database, supports auto-inferring and creating new columns
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @param params.docId - 文档 ID
- * @param params.databaseBlockId - 数据库 block ID
- * @param params.json - 要插入的数据
- *   - 简单格式：[{col1: val1, col2: val2}, ...]
- *   - 标准格式：{title: string, data: [], columns: []}
- * @returns 插入结果，包含：
- *   - imported: 实际导入的行数
- *   - newColumns: 新推断并创建的列数
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @param params.docId - Document ID
+ * @param params.databaseBlockId - Database block ID
+ * @param params.json - Data to insert
+ *   - Simple format: [{col1: val1, col2: val2}, ...]
+ *   - Standard format: {title: string, data: [], columns: []}
+ * @returns Insert result containing:
+ *   - imported: Actual number of imported rows
+ *   - newColumns: Number of newly inferred and created columns
  *
  * @example
  * await insertDatabaseHandler({
  *   docId: 'abc123',
  *   databaseBlockId: 'db456',
  *   json: [
- *     { title: '新任务1', status: '进行中', priority: '高' },
- *     { title: '新任务2', status: '已完成', priority: '低' }
+ *     { title: 'New Task 1', status: 'In Progress', priority: 'High' },
+ *     { title: 'New Task 2', status: 'Completed', priority: 'Low' }
  *   ]
  * });
  */
@@ -2860,12 +2861,12 @@ export async function insertDatabaseHandler(params: {
 	const workspaceId = getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 
-	// 解析 JSON
+	// Parse JSON
 	let importData: any;
 	try {
 		importData = typeof params.json === 'string' ? JSON.parse(params.json) : params.json;
 	} catch {
-		throw new Error('JSON 格式无效');
+		throw new Error('Invalid JSON format');
 	}
 
 	const socket = await createWorkspaceSocket();
@@ -2878,7 +2879,7 @@ export async function insertDatabaseHandler(params: {
 		}
 		const blocks = doc.getMap('blocks') as Y.Map<any>;
 
-		// 获取数据库
+		// Get database
 		const dbBlock = blocks.get(params.databaseBlockId);
 		if (!dbBlock || !(dbBlock instanceof Y.Map)) {
 			throw new Error(`Database block '${params.databaseBlockId}' not found`);
@@ -2887,29 +2888,29 @@ export async function insertDatabaseHandler(params: {
 			throw new Error(`Block '${params.databaseBlockId}' is not a database`);
 		}
 
-		// 检测格式并获取数据
+		// Detect format and get data
 		let rowsToImport: Record<string, any>[];
 
-		// 简单格式: 数组
+		// Simple format: array
 		if (Array.isArray(importData)) {
 			rowsToImport = importData;
 		}
-		// 标准格式: 对象
+		// Standard format: object
 		else if (typeof importData === 'object' && importData !== null) {
 			rowsToImport = importData.data || [];
 		} else {
-			throw new Error('不支持的 JSON 格式');
+			throw new Error('Unsupported JSON format');
 		}
 
 		if (rowsToImport.length === 0) {
-			return { imported: 0, message: '没有数据需要导入' };
+			return { imported: 0, message: 'No data to import' };
 		}
 
-		// 获取现有的列定义
+		// Get existing column definitions
 		const existingColumns = readColumnDefs(dbBlock);
 		const existingColNames = new Set(existingColumns.map((c) => c.name));
 
-		// 从数据中推断需要的新列
+		// Infer new columns needed from data
 		const inferredColumns: Array<{ name: string; type: string; options?: string[] }> = [];
 		const allKeys = new Set<string>();
 
@@ -2919,10 +2920,10 @@ export async function insertDatabaseHandler(params: {
 			}
 		}
 
-		// 排除 title 列
+		// Exclude title column
 		allKeys.delete('title');
 
-		// 推断每列的类型
+		// Infer type for each column
 		for (const key of allKeys) {
 			const values = rowsToImport
 				.filter((r) => r && r[key] !== undefined && r[key] !== null && r[key] !== '')
@@ -2931,19 +2932,19 @@ export async function insertDatabaseHandler(params: {
 			let inferredType = 'rich-text';
 			let options: string[] | undefined;
 
-			// 检测是否为布尔值
+			// Detect if values are booleans
 			if (values.every((v) => typeof v === 'boolean')) {
 				inferredType = 'checkbox';
 			}
-			// 检测是否为数字
+			// Detect if values are numbers
 			else if (values.every((v) => typeof v === 'number' || !isNaN(Number(v)))) {
 				inferredType = 'number';
 			}
-			// 检测是否为日期
+			// Detect if values are dates
 			else if (values.every((v) => !isNaN(Date.parse(String(v))) || typeof v === 'number')) {
 				inferredType = 'date';
 			}
-			// 检测 URL
+			// Detect URLs
 			else if (
 				values.every(
 					(v) =>
@@ -2953,7 +2954,7 @@ export async function insertDatabaseHandler(params: {
 			) {
 				inferredType = 'link';
 			}
-			// 检测选项（重复值较少，可能是选项）
+			// Detect options (fewer repeated values, likely options)
 			else {
 				const uniqueValues = new Set(values.map(String));
 				if (uniqueValues.size <= 20 && uniqueValues.size < values.length * 0.5) {
@@ -2965,7 +2966,7 @@ export async function insertDatabaseHandler(params: {
 			inferredColumns.push({ name: key, type: inferredType, options });
 		}
 
-		// 添加新列到数据库
+		// Add new columns to database
 		const columns = dbBlock.get('prop:columns') as Y.Array<any>;
 		const newColumnIds: Map<string, string> = new Map();
 
@@ -2982,7 +2983,7 @@ export async function insertDatabaseHandler(params: {
 				columns.push([colDef]);
 				newColumnIds.set(col.name, columnId);
 
-				// 更新视图列
+				// Update view columns
 				const views = dbBlock.get('prop:views') as Y.Array<any>;
 				if (views instanceof Y.Array) {
 					views.forEach((view: any) => {
@@ -3001,14 +3002,14 @@ export async function insertDatabaseHandler(params: {
 			}
 		}
 
-		// 重新获取列定义（包含新增的列）
+		// Re-read column definitions (including newly added columns)
 		const allColumns = readColumnDefs(dbBlock);
 		const colByName = new Map<string, any>();
 		for (const col of allColumns) {
 			colByName.set(col.name, col);
 		}
 
-		// 添加行
+		// Add rows
 		let importedCount = 0;
 		const cellsMap = dbBlock.get('prop:cells') as Y.Map<any>;
 		const dbChildren = dbBlock.get('sys:children') as Y.Array<any>;
@@ -3025,7 +3026,7 @@ export async function insertDatabaseHandler(params: {
 
 			const rowCells = ensureDatabaseRowCells(cellsMap, rowBlockId);
 
-			// 处理每个字段
+			// Process each field
 			for (const [key, value] of Object.entries(rowData)) {
 				if (key === 'title') continue;
 
@@ -3038,7 +3039,7 @@ export async function insertDatabaseHandler(params: {
 			importedCount++;
 		}
 
-		// 推送更新
+		// Push update
 		await updateYDoc(socket, workspaceId, params.docId, doc, prevSV);
 
 		return {

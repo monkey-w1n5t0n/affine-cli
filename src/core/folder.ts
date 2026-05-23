@@ -1,6 +1,6 @@
 /**
- * 文件夹核心模块
- * 处理文件夹的创建、列表、重命名、删除、添加/移动/移除文档等操作
+ * Folder core module
+ * Handles folder creation, listing, renaming, deletion, adding/moving/removing documents, etc.
  */
 
 import { getWorkspaceId } from '../utils/config.js';
@@ -15,39 +15,39 @@ import * as Y from 'yjs';
 import { generateId } from '../utils/misc.js';
 
 /**
- * specialWorkspaceDbDocId: 生成工作区特殊文档 ID
+ * specialWorkspaceDbDocId: Generate workspace special document ID
  *
- * 功能描述：
- * - Affine 使用特殊的文档 ID 格式来存储工作区的附加数据
- * - 格式：db${workspaceId}${tableName}
+ * Description:
+ * - Affine uses a special document ID format to store workspace auxiliary data
+ * - Format: db${workspaceId}${tableName}
  *
- * @param workspaceId - 工作区 ID
- * @param tableName - 表名（如 'folders'）
- * @returns 特殊文档 ID 字符串
+ * @param workspaceId - Workspace ID
+ * @param tableName - Table name (e.g. 'folders')
+ * @returns Special document ID string
  */
 function specialWorkspaceDbDocId(workspaceId: string, tableName: string): string {
 	return `db$${workspaceId}$${tableName}`;
 }
 
 /**
- * isDeletedRecord: 判断记录是否已删除
+ * isDeletedRecord: Check if a record is deleted
  *
- * @param record - Y.Map 记录
- * @returns 是否已删除
+ * @param record - Y.Map record
+ * @returns Whether the record is deleted
  */
 function isDeletedRecord(record: Y.Map<any>): boolean {
 	return record.get('$$DELETED') === true || record.size === 0;
 }
 
 /**
- * readOrganizeNodes: 读取 Organize 节点
+ * readOrganizeNodes: Read organize nodes
  *
- * 功能描述：
- * - 从 Y.Doc 的 share 中读取所有组织节点
- * - 过滤掉已删除的记录和无效记录
+ * Description:
+ * - Reads all organize nodes from Y.Doc's share
+ * - Filters out deleted and invalid records
  *
- * @param doc - Y.Doc 对象
- * @returns 节点数组，每个包含 id、type、data、parentId、index
+ * @param doc - Y.Doc object
+ * @returns Node array, each containing id, type, data, parentId, index
  */
 function readOrganizeNodes(doc: Y.Doc): any[] {
 	const nodes: any[] = [];
@@ -69,7 +69,7 @@ function readOrganizeNodes(doc: Y.Doc): any[] {
 }
 
 /**
- * 生成排序索引（在两个索引之间）
+ * Generate sort index (between two indices)
  */
 async function nextOrganizeIndex(nodes: any[], parentId: string | null): Promise<string> {
 	const siblings = nodes
@@ -136,14 +136,14 @@ async function generateFractionalIndexingKeyBetween(
 }
 
 /**
- * folderAllHandler: 获取所有文件夹列表
+ * folderAllHandler: Get all folders
  *
- * 功能描述：
- * - 通过 WebSocket + Yjs 获取工作区的所有文件夹
- * - 返回包含 id、title、parentId、index 的文件夹列表
+ * Description:
+ * - Gets all folders in the workspace via WebSocket + Yjs
+ * - Returns folder list with id, title, parentId, index
  *
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 文件夹数组
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Folder array
  */
 export async function folderAllHandler(params: { workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);
@@ -164,7 +164,7 @@ export async function folderAllHandler(params: { workspace?: string }): Promise<
 			.filter((node: any) => node.type === 'folder')
 			.map((folder: any) => ({
 				id: folder.id,
-				title: folder.data || '未命名文件夹',
+				title: folder.data || 'Unnamed folder',
 				parentId: folder.parentId,
 				index: folder.index
 			}));
@@ -175,17 +175,17 @@ export async function folderAllHandler(params: { workspace?: string }): Promise<
 }
 
 /**
- * folderListHandler: 获取指定文件夹下的子项列表
+ * folderListHandler: Get children list of a specified folder
  *
- * 功能描述：
- * - 获取指定文件夹下的所有子项（文件夹或文档）
- * - 支持仅返回文件夹列表
- * - 通过 WebSocket + Yjs 获取实时数据
+ * Description:
+ * - Gets all children (folders or documents) under the specified folder
+ * - Supports returning only folders
+ * - Gets real-time data via WebSocket + Yjs
  *
- * @param params.id - 父文件夹 ID（必需）
- * @param params.folder - 是否仅返回文件夹/标签，默认 false 返回文档
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 子项数组，包含 id、type、data、title、index
+ * @param params.id - Parent folder ID (required)
+ * @param params.folder - Whether to return only folders/tags, default false returns documents
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Children array, containing id, type, data, title, index
  */
 export async function folderListHandler(params: {
 	id: string;
@@ -218,7 +218,7 @@ export async function folderListHandler(params: {
 			const isFolderRef = child.type === 'tag';
 			const title = isFolderRef
 				? nodes.find((n: any) => n.id === child.data)?.data || child.data
-				: pagesInfo.get(child.data)?.title || child.data || '未命名';
+				: pagesInfo.get(child.data)?.title || child.data || 'Untitled';
 			return {
 				id: child.id,
 				type: child.type,
@@ -232,18 +232,18 @@ export async function folderListHandler(params: {
 }
 
 /**
- * folderCreateHandler: 创建新文件夹
+ * folderCreateHandler: Create a new folder
  *
- * 功能描述：
- * - 在工作区中创建新文件夹
- * - 支持指定父文件夹和排序索引
- * - 通过 WebSocket + Yjs 实时创建
+ * Description:
+ * - Creates a new folder in the workspace
+ * - Supports specifying parent folder and sort index
+ * - Creates in real-time via WebSocket + Yjs
  *
- * @param params.name - 文件夹名称（必需）
- * @param params.parent - 父文件夹 ID，空字符串表示根级别（可选）
- * @param params.index - 排序索引（可选，默认自动计算）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含创建结果的对象
+ * @param params.name - Folder name (required)
+ * @param params.parent - Parent folder ID, empty string means root level (optional)
+ * @param params.index - Sort index (optional, auto-calculated by default)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing creation result
  */
 export async function folderCreateHandler(params: {
 	name: string;
@@ -293,16 +293,16 @@ export async function folderCreateHandler(params: {
 }
 
 /**
- * folderDeleteHandler: 删除文件夹
+ * folderDeleteHandler: Delete a folder
  *
- * 功能描述：
- * - 删除指定的文件夹
- * - 使用软删除方式（设置 $$DELETED 标记）
- * - 不会删除文件夹中的文档，只删除文件夹本身
+ * Description:
+ * - Deletes the specified folder
+ * - Uses soft delete (sets $$DELETED marker)
+ * - Does not delete documents in the folder, only the folder itself
  *
- * @param params.id - 要删除的文件夹 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含删除结果的对象
+ * @param params.id - Folder ID to delete (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing deletion result
  */
 export async function folderDeleteHandler(params: {
 	id: string;
@@ -324,7 +324,7 @@ export async function folderDeleteHandler(params: {
 		const nodes = readOrganizeNodes(doc);
 		const folder = nodes.find((n: any) => n.id === params.id && n.type === 'folder');
 		if (!folder) {
-			throw new Error(`文件夹 ${params.id} 不存在`);
+			throw new Error(`Folder ${params.id} does not exist`);
 		}
 
 		const record = doc.getMap(params.id);
@@ -335,25 +335,25 @@ export async function folderDeleteHandler(params: {
 
 		return {
 			success: true,
-			message: `文件夹 ${params.id} 已删除`
+			message: `Folder ${params.id} deleted`
 		};
 	} finally {
 	}
 }
 
 /**
- * folderAddHandler: 将文档添加到文件夹
+ * folderAddHandler: Add document to folder
  *
- * 功能描述：
- * - 在指定文件夹下添加一个文档链接
- * - 自动计算排序索引
- * - 通过 WebSocket + Yjs 实时更新
+ * Description:
+ * - Adds a document link under the specified folder
+ * - Auto-calculates sort index
+ * - Updates in real-time via WebSocket + Yjs
  *
- * @param params.id - 目标文件夹 ID（必需）
- * @param params.target - 要添加的文档 ID（必需）
- * @param params.index - 排序索引（可选，默认自动计算）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含添加结果的对象
+ * @param params.id - Target folder ID (required)
+ * @param params.target - Document ID to add (required)
+ * @param params.index - Sort index (optional, auto-calculated by default)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing addition result
  */
 export async function folderAddHandler(params: {
 	id: string;
@@ -379,7 +379,7 @@ export async function folderAddHandler(params: {
 
 		const folder = nodeMap.get(params.id);
 		if (!folder || folder.type !== 'folder') {
-			throw new Error(`文件夹 ${params.id} 不存在`);
+			throw new Error(`Folder ${params.id} does not exist`);
 		}
 
 		const linkId = generateId(12, 'link');
@@ -407,17 +407,17 @@ export async function folderAddHandler(params: {
 }
 
 /**
- * folderMoveHandler: 将文档移动到目标文件夹
+ * folderMoveHandler: Move document to target folder
  *
- * 功能描述：
- * - 如果文档已在某个文件夹中，将其移动到新文件夹
- * - 如果文档不在任何文件夹中，将其添加到目标文件夹
- * - 通过 WebSocket + Yjs 实时更新
+ * Description:
+ * - If document is already in a folder, moves it to the new folder
+ * - If document is not in any folder, adds it to the target folder
+ * - Updates in real-time via WebSocket + Yjs
  *
- * @param params.id - 目标文件夹 ID（必需）
- * @param params.target - 要移动的文档 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含移动结果的对象
+ * @param params.id - Target folder ID (required)
+ * @param params.target - Document ID to move (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing move result
  */
 export async function folderMoveHandler(params: {
 	id: string;
@@ -440,7 +440,7 @@ export async function folderMoveHandler(params: {
 		const nodes = readOrganizeNodes(doc);
 		const targetFolder = nodes.find((n: any) => n.id === params.id && n.type === 'folder');
 		if (!targetFolder) {
-			throw new Error(`目标文件夹 ${params.id} 不存在`);
+			throw new Error(`Target folder ${params.id} does not exist`);
 		}
 
 		const existingLink = nodes.find(
@@ -468,24 +468,24 @@ export async function folderMoveHandler(params: {
 
 		return {
 			success: true,
-			message: `文档 ${params.target} 已移动到文件夹 ${params.id}`
+			message: `Document ${params.target} moved to folder ${params.id}`
 		};
 	} finally {
 	}
 }
 
 /**
- * folderRemoveHandler: 从文件夹移除文档
+ * folderRemoveHandler: Remove document from folder
  *
- * 功能描述：
- * - 从指定文件夹中移除文档链接
- * - 支持使用链接 ID 或文档 ID 进行移除
- * - 使用软删除方式（设置 $$DELETED 标记）
+ * Description:
+ * - Removes document link from the specified folder
+ * - Supports removal by link ID or document ID
+ * - Uses soft delete (sets $$DELETED marker)
  *
- * @param params.id - 文档 ID 或链接 ID（必需）
- * @param params.folder - 源文件夹 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含移除结果的对象
+ * @param params.id - Document ID or link ID (required)
+ * @param params.folder - Source folder ID (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing removal result
  */
 export async function folderRemoveHandler(params: {
 	id: string;
@@ -513,7 +513,7 @@ export async function folderRemoveHandler(params: {
 				n.type === 'doc'
 		);
 		if (!link) {
-			throw new Error(`文件夹 ${params.folder} 中不存在文档 ${params.id}`);
+			throw new Error(`Document ${params.id} does not exist in folder ${params.folder}`);
 		}
 
 		const record = doc.getMap(link.id);
@@ -524,26 +524,26 @@ export async function folderRemoveHandler(params: {
 
 		return {
 			success: true,
-			message: `文档 ${params.id} 已从文件夹 ${params.folder} 移除`
+			message: `Document ${params.id} removed from folder ${params.folder}`
 		};
 	} finally {
 	}
 }
 
 /**
- * folderUpdateHandler: 更新文件夹属性
+ * folderUpdateHandler: Update folder properties
  *
- * 功能描述：
- * - 支持更新文件夹的名称、父文件夹和排序索引
- * - 如果只更新父文件夹，会自动重新计算排序索引
- * - 通过 WebSocket + Yjs 实时更新
+ * Description:
+ * - Supports updating folder name, parent folder, and sort index
+ * - If only parent folder is updated, sort index is auto-recalculated
+ * - Updates in real-time via WebSocket + Yjs
  *
- * @param params.id - 要更新的文件夹 ID（必需）
- * @param params.name - 新文件夹名称（可选）
- * @param params.parent - 新父文件夹 ID，空字符串表示根级别（可选）
- * @param params.index - 排序索引（可选）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含更新结果的对象
+ * @param params.id - Folder ID to update (required)
+ * @param params.name - New folder name (optional)
+ * @param params.parent - New parent folder ID, empty string means root level (optional)
+ * @param params.index - Sort index (optional)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing update result
  */
 export async function folderUpdateHandler(params: {
 	id: string;
@@ -568,7 +568,7 @@ export async function folderUpdateHandler(params: {
 		const nodes = readOrganizeNodes(doc);
 		const folder = nodes.find((n: any) => n.id === params.id && n.type === 'folder');
 		if (!folder) {
-			throw new Error(`文件夹 ${params.id} 不存在`);
+			throw new Error(`Folder ${params.id} does not exist`);
 		}
 
 		const record = doc.getMap(params.id);
@@ -591,22 +591,22 @@ export async function folderUpdateHandler(params: {
 
 		return {
 			success: true,
-			message: `文件夹 ${params.id} 已更新`
+			message: `Folder ${params.id} updated`
 		};
 	} finally {
 	}
 }
 
 /**
- * folderClearHandler: 清除所有空文件夹
+ * folderClearHandler: Clear all empty folders
  *
- * 功能描述：
- * - 删除所有没有子文件夹或文档关联的文件夹
- * - 递归执行，直到没有孤立文件夹为止
- * - 使用软删除方式（设置 $$DELETED 标记）
+ * Description:
+ * - Deletes all folders with no child folders or associated documents
+ * - Runs recursively until no orphan folders remain
+ * - Uses soft delete (sets $$DELETED marker)
  *
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含删除数量的对象
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing deletion count
  */
 export async function folderClearHandler(params: { workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);

@@ -1,11 +1,11 @@
 /**
- * 文件附件核心模块
- * 处理文件上传、删除、清理等操作
+ * File attachment core module
+ * Handles file upload, delete, cleanup, and other operations
  *
- * 支持的功能：
- * 1. 上传文件/内容到工作区作为附件
- * 2. 删除指定附件（支持软删除和永久删除）
- * 3. 清理已标记为删除的附件，释放存储空间
+ * Supported features:
+ * 1. Upload files/content to workspace as attachments
+ * 2. Delete specified attachments (supports soft delete and permanent delete)
+ * 3. Clean up deleted attachments to release storage space
  */
 
 import { createGraphQLClient } from '../utils/graphqlClient.js';
@@ -17,21 +17,21 @@ import FormData from 'form-data';
 import fetch from 'node-fetch';
 
 /* ============================================================================
- * 辅助函数
+ * Helper functions
  * ============================================================================ */
 
 /**
- * 解码 Blob 内容
+ * Decode blob content
  *
- * 自动识别输入内容是 Base64 编码还是普通文本
- * 如果看起来像 Base64 则解码，否则直接作为文本处理
+ * Automatically detects whether input is Base64 encoded or plain text
+ * If it looks like Base64, decodes it; otherwise treats as plain text
  *
- * @param content - 输入内容字符串
- * @returns 解码后的 Buffer
+ * @param content - Input content string
+ * @returns Decoded Buffer
  *
  * @example
  * const buf = decodeBlobContent('SGVsbG8gV29ybGQ='); // Base64 "Hello World"
- * const buf2 = decodeBlobContent('Hello World');     // 直接文本
+ * const buf2 = decodeBlobContent('Hello World');     // Plain text
  */
 function decodeBlobContent(content: string): Buffer {
 	const normalized = content.trim().replace(/\s+/g, '');
@@ -46,44 +46,44 @@ function decodeBlobContent(content: string): Buffer {
 				return decoded;
 			}
 		} catch {
-			// 回退到 UTF-8 文本
+			// Fall back to UTF-8 text
 		}
 	}
 	return Buffer.from(content, 'utf8');
 }
 
 /* ============================================================================
- * 公共接口
+ * Public interface
  * ============================================================================ */
 
 /**
- * 上传附件处理器
+ * Upload attachment handler
  *
- * 将文件或内容上传到工作区作为附件
- * 支持两种方式：
- * 1. --file: 从文件系统读取文件
- * 2. --content: 直接传入 Base64 编码或文本内容
+ * Uploads a file or content to the workspace as an attachment
+ * Supports two modes:
+ * 1. --file: Read file from filesystem
+ * 2. --content: Pass Base64 encoded or text content directly
  *
- * @param params - 参数对象
- * @param params.file - 文件路径（优先使用）
- * @param params.content - Base64 编码内容或文本内容
- * @param params.filename - 自定义文件名（可选）
- * @param params.contentType - MIME 类型（可选，默认 application/octet-stream）
- * @param params.workspace - 工作区 ID（可选，默认使用配置中的工作区）
- * @returns 上传结果，包含：
- *   - success: 是否成功
+ * @param params - Parameter object
+ * @param params.file - File path (takes priority)
+ * @param params.content - Base64 encoded content or text content
+ * @param params.filename - Custom filename (optional)
+ * @param params.contentType - MIME type (optional, default application/octet-stream)
+ * @param params.workspace - Workspace ID (optional, defaults to configured workspace)
+ * @returns Upload result, containing:
+ *   - success: Whether successful
  *   - data: { id, key, workspaceId, filename, contentType, size, downloadUrl, uploadedAt }
  *
- * @throws 文件不存在、缺少参数、上传失败等错误
+ * @throws Errors for file not found, missing parameters, upload failure, etc.
  *
  * @example
- * // 上传文件
+ * // Upload file
  * await fileUploadHandler({ file: '/path/to/image.png' });
  *
- * // 上传 Base64 内容
+ * // Upload Base64 content
  * await fileUploadHandler({ content: 'base64...', filename: 'doc.pdf' });
  *
- * // 上传文本内容
+ * // Upload text content
  * await fileUploadHandler({ content: 'Hello World', filename: 'hello.txt', contentType: 'text/plain' });
  */
 export async function fileUploadHandler(params: {
@@ -101,7 +101,7 @@ export async function fileUploadHandler(params: {
 
 	if (params.file) {
 		if (!fs.existsSync(params.file)) {
-			throw new Error(`文件不存在: ${params.file}`);
+			throw new Error(`File not found: ${params.file}`);
 		}
 		content = fs.readFileSync(params.file).toString('base64');
 		filename = params.filename || path.basename(params.file);
@@ -109,7 +109,7 @@ export async function fileUploadHandler(params: {
 		content = params.content;
 		filename = params.filename || '-content';
 	} else {
-		throw new Error('必须提供 --file 或 --content 参数');
+		throw new Error('Must provide --file or --content parameter');
 	}
 
 	const payload = decodeBlobContent(content);
@@ -177,24 +177,24 @@ export async function fileUploadHandler(params: {
 }
 
 /**
- * 删除附件处理器
+ * Delete attachment handler
  *
- * 删除指定的附件，支持软删除（默认）和永久删除
- * 软删除仅标记为已删除，可通过 clean 命令清理
+ * Deletes the specified attachment, supports soft delete (default) and permanent delete
+ * Soft delete only marks as deleted, can be cleaned up via clean command
  *
- * @param params - 参数对象
- * @param params.id - 要删除的附件 ID（Blob key）
- * @param params.permanently - 是否永久删除（默认 false）
- * @param params.workspace - 工作区 ID（可选）
- * @returns 删除结果 { success, message }
+ * @param params - Parameter object
+ * @param params.id - Attachment ID to delete (Blob key)
+ * @param params.permanently - Whether to permanently delete (default false)
+ * @param params.workspace - Workspace ID (optional)
+ * @returns Deletion result { success, message }
  *
- * @throws 删除失败等错误
+ * @throws Errors for deletion failure, etc.
  *
  * @example
- * // 软删除（可恢复）
+ * // Soft delete (recoverable)
  * await fileDeleteHandler({ id: 'blob123' });
  *
- * // 永久删除
+ * // Permanent delete
  * await fileDeleteHandler({ id: 'blob123', permanently: true });
  */
 export async function fileDeleteHandler(params: {
@@ -217,19 +217,19 @@ export async function fileDeleteHandler(params: {
 
 	return {
 		success: true,
-		message: `附件 ${params.id} 已${params.permanently ? '永久' : ''}删除`
+		message: `Attachment ${params.id} ${params.permanently ? 'permanently ' : ''}deleted`
 	};
 }
 
 /**
- * 清理已删除的附件处理器
+ * Clean deleted attachments handler
  *
- * 清理所有已标记为删除的附件，释放存储空间
- * 此操作不可恢复
+ * Cleans up all attachments marked as deleted, releasing storage space
+ * This operation is irreversible
  *
- * @param params - 参数对象
- * @param params.workspace - 工作区 ID（可选）
- * @returns 清理结果 { success, blobsReleased, message }
+ * @param params - Parameter object
+ * @param params.workspace - Workspace ID (optional)
+ * @returns Cleanup result { success, blobsReleased, message }
  *
  * @example
  * await fileCleanHandler({ workspace: 'ws123' });
@@ -247,6 +247,6 @@ export async function fileCleanHandler(params: { workspace?: string }): Promise<
 	return {
 		success: true,
 		blobsReleased: data.releaseDeletedBlobs,
-		message: `已清理已删除的附件`
+		message: `Cleaned up deleted attachments`
 	};
 }

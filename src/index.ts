@@ -1,28 +1,28 @@
 /**
- * 模块名称：index.ts
- * CLI 主入口模块
+ * Module: index.ts
+ * CLI main entry module
  *
- * 功能描述：
- * - 提供 Affine Skill 基础版命令行工具的主入口
- * - 注册所有 CLI 模块（auth, workspace, doc, tags, folder, collection, file, comment, database）
- * - 解析命令行参数并执行对应的操作
- * - 提供帮助信息和版本信息
+ * Description:
+ * - Provides the main entry point for the Affine Skill basic CLI tool
+ * - Registers all CLI modules (auth, workspace, doc, tags, folder, collection, file, comment, database)
+ * - Parses command-line arguments and executes corresponding actions
+ * - Provides help and version info
  *
- * 使用方法：
- * - affine-cli <模块> <操作> [选项]  运行模块命令
- * - affine-cli <模块> --help         显示模块帮助
- * - affine-cli help [模块]           显示帮助
- * - affine-cli --version           显示版本
+ * Usage:
+ * - affine-cli <module> <action> [options]  Run module command
+ * - affine-cli <module> --help         Show module help
+ * - affine-cli help [module]           Show help
+ * - affine-cli --version           Show version
  *
- * 导出：
- * - CLI_MODULES: 所有注册的 CLI 模块集合
- * - runCli: CLI 入口函数，供外部调用
+ * Exports:
+ * - CLI_MODULES: All registered CLI modules
+ * - runCli: CLI entry function, for external use
  */
 
 import { CliModule, generateHelp, outputResult, setOutputFormat } from './utils/cliUtils.js';
 
 /**
- * 导入的 CLI 模块（命令映射）
+ * Imported CLI modules (command mapping)
  */
 import { runAuthCommands } from './cli/auth.js';
 import { runWorkspaceCommands } from './cli/workspace.js';
@@ -36,89 +36,89 @@ import { runDatabaseCommands } from './cli/database.js';
 import { runJournalCommands } from './cli/journal.js';
 
 /**
- * CLI_MODULES: CLI 模块注册表
+ * CLI_MODULES: CLI module registry
  *
- * 功能描述：
- * - 存储所有注册的 CLI 模块
- * - 包含模块名称、描述和对应的操作映射
+ * Description:
+ * - Stores all registered CLI modules
+ * - Contains module name, description, and action mapping
  */
 const CLI_MODULES: Record<string, CliModule> = {
 	auth: {
 		name: 'auth',
-		description: '授权管理（登录、登出、状态查询）',
+		description: 'Auth management (login, logout, status)',
 		actions: runAuthCommands
 	},
 	workspace: {
 		name: 'workspace',
-		description: '工作区管理',
+		description: 'Workspace management',
 		actions: runWorkspaceCommands
 	},
 	doc: {
 		name: 'doc',
-		description: '文档管理（创建、读取、更新、删除、搜索等）',
+		description: 'Document management (create, read, update, delete, search, etc.)',
 		actions: runDocCommands
 	},
 	tags: {
 		name: 'tags',
-		description: '标签管理',
+		description: 'Tag management',
 		actions: runTagsCommands
 	},
 	folder: {
 		name: 'folder',
-		description: '文件夹管理',
+		description: 'Folder management',
 		actions: runFolderCommands
 	},
 	collection: {
 		name: 'collection',
-		description: '收藏夹管理',
+		description: 'Collection management',
 		actions: runCollectionCommands
 	},
 	file: {
 		name: 'file',
-		description: '文件附件管理',
+		description: 'File attachment management',
 		actions: runFileCommands
 	},
 	comment: {
 		name: 'comment',
-		description: '评论管理（列出、创建、更新、删除、解决评论）',
+		description: 'Comment management (list, create, update, delete, resolve)',
 		actions: runCommentCommands
 	},
 	database: {
 		name: 'database',
-		description: '数据库管理（在文档中添加、管理数据表）',
+		description: 'Database management (add and manage data tables in documents)',
 		actions: runDatabaseCommands
 	},
 	journal: {
 		name: 'journal',
-		description: '日记管理（创建、列出、追加日记）',
+		description: 'Journal management (create, list, append)',
 		actions: runJournalCommands
 	}
 };
 
 /* ============================================================================
- * 主帮助信息
+ * Main help info
  * ============================================================================ */
 
 /**
- * printMainHelp: 打印主帮助信息
+ * printMainHelp: Print main help info
  *
- * 功能描述：
- * - 打印所有可用的模块列表
- * - 显示使用示例
+ * Description:
+ * - Print all available modules
+ * - Show usage examples
  */
 function printMainHelp() {
 	const lines = [
-		`affine-cli ${CLI_VERSION} - Affine 基础版命令行工具`,
+		`affine-cli ${CLI_VERSION} - Affine basic CLI tool`,
 		'',
-		'用法:',
-		'  affine-cli <模块> <操作> [选项]  运行模块命令',
-		'  affine-cli <模块> --help         显示模块帮助',
-		'  affine-cli help [模块]           显示帮助',
+		'Usage:',
+		'  affine-cli <module> <action> [options]  Run module command',
+		'  affine-cli <module> --help         Show module help',
+		'  affine-cli help [module]           Show help',
 		'',
-		'全局选项:',
-		'  --text                    输出文本格式（默认 JSON）',
+		'Global options:',
+		'  --text                    Output text format (default JSON)',
 		'',
-		'模块:'
+		'Modules:'
 	];
 
 	for (const [name, module] of Object.entries(CLI_MODULES)) {
@@ -126,7 +126,7 @@ function printMainHelp() {
 	}
 
 	lines.push('');
-	lines.push('示例:');
+	lines.push('Examples:');
 	lines.push('  affine-cli auth login');
 	lines.push('  affine-cli auth status');
 	lines.push('  affine-cli workspace list');
@@ -137,12 +137,12 @@ function printMainHelp() {
 	lines.push('  affine-cli collection list');
 	lines.push('  affine-cli file upload --file "./image.png"');
 	lines.push('  affine-cli comment list --doc-id <id>');
-	lines.push('  affine-cli comment create --doc-id <id> --content "评论内容"');
-	lines.push('  affine-cli database create --title "任务表"');
+	lines.push('  affine-cli comment create --doc-id <id> --content "Comment content"');
+	lines.push('  affine-cli database create --title "Task Table"');
 	lines.push(
-		'  affine-cli database create --title "任务表" --columns "[{\"name\":\"状态\",\"type\":\"select\",\"options\":[\"进行中\",\"已完成\"]}]"'
+		'  affine-cli database create --title "Task Table" --columns "[{\"name\":\"Status\",\"type\":\"select\",\"options\":[\"In Progress\",\"Done\"]}]"'
 	);
-	lines.push('  affine-cli database create --title "任务表" --data @data.json');
+	lines.push('  affine-cli database create --title "Task Table" --data @data.json');
 	lines.push('  affine-cli database list --doc-id <id>');
 	lines.push('  affine-cli database columns --doc-id <id> --db-id <db-id>');
 	lines.push('  affine-cli database import --doc-id <id> --db-id <db-id> --json @data.json');
@@ -150,39 +150,39 @@ function printMainHelp() {
 	lines.push('  affine-cli database delete --doc-id <id> --db-id <db-id>');
 	lines.push('  affine-cli journal list');
 	lines.push('  affine-cli journal create --date "2024-01-15" --content "./content.md"');
-	lines.push('  affine-cli journal append --date "2024-01-15" --content "今日总结..."');
+	lines.push('  affine-cli journal append --date "2024-01-15" --content "Today\'s summary..."');
 
 	console.log(lines.join('\n'));
 }
 
 /* ============================================================================
- * CLI 主入口
+ * CLI main entry
  * ============================================================================ */
 
 import { CLI_VERSION } from './utils/version.js';
 
 /**
- * runCli: CLI 主入口函数
+ * runCli: CLI main entry function
  *
- * 功能描述：
- * - 解析命令行参数
- * - 查找并执行对应的模块操作
- * - 处理帮助信息和版本信息
+ * Description:
+ * - Parse command-line arguments
+ * - Find and execute corresponding module action
+ * - Handle help and version info
  *
- * @param args - 命令行参数数组
- * @returns 执行是否成功
+ * @param args - Command-line argument array
+ * @returns Whether execution was successful
  *
- * 使用示例：
+ * Usage examples:
  * - runCli(['doc', 'list', '--workspace', 'xxx'])
  * - runCli(['--version'])
  */
 export async function runCli(args: string[]): Promise<boolean> {
-	// 解析全局选项
+	// Parse global options
 	const globalArgs = [...args];
 	let command: string | undefined;
 	let remainingArgs: string[] = [];
 
-	// 提取全局选项并过滤
+	// Extract and filter global options
 	const filteredArgs = globalArgs.filter((arg) => {
 		if (arg === '--text') {
 			setOutputFormat('text');
@@ -191,19 +191,19 @@ export async function runCli(args: string[]): Promise<boolean> {
 		return true;
 	});
 
-	// 解析命令和参数
+	// Parse command and arguments
 	if (filteredArgs.length > 0) {
 		command = filteredArgs[0];
 		remainingArgs = filteredArgs.slice(1);
 	}
 
-// 版本信息
+// Version info
 	if (command === '--version' || command === '-v' || command === 'version') {
 		console.log(CLI_VERSION);
 		return true;
 	}
 
-	// 帮助信息
+	// Help info
 	if (!command || command === 'help' || command === '--help' || command === '-h') {
 		if (remainingArgs.length > 0) {
 			const target = remainingArgs[0];
@@ -216,18 +216,18 @@ export async function runCli(args: string[]): Promise<boolean> {
 		return true;
 	}
 
-	// 检查模块
+	// Check module
 	const module = CLI_MODULES[command];
 	if (module) {
 		let [actionName, ...moduleArgs] = remainingArgs;
 
-		// 检查 actionName 是否为 --help 或 -h
+		// Check if actionName is --help or -h
 		if (actionName === '--help' || actionName === '-h') {
 			console.log(generateHelp(module));
 			return true;
 		}
 
-		// 无 action 或请求帮助
+		// No action or help requested
 		if (
 			!actionName ||
 			actionName === 'help' ||
@@ -238,41 +238,41 @@ export async function runCli(args: string[]): Promise<boolean> {
 			return true;
 		}
 
-		// 查找动作
+		// Find action
 		const action = module.actions[actionName];
 		if (!action) {
-			console.error(`未知操作: ${actionName}`);
-			console.error(`运行 'affine-cli ${command} --help' 查看可用操作`);
+			console.error(`Unknown action: ${actionName}`);
+			console.error(`Run 'affine-cli ${command} --help' for available actions`);
 			return false;
 		}
 
-		// 执行动作
+		// Execute action
 		try {
 			const result = await action.handler(moduleArgs);
 			outputResult(result, result.success ? 0 : 1);
 			return result.success;
 		} catch (err: any) {
-			console.error(`错误: ${err.message}`);
+			console.error(`Error: ${err.message}`);
 			return false;
 		}
 	}
 
-	console.error(`未知命令: ${command}`);
+	console.error(`Unknown command: ${command}`);
 	printMainHelp();
 	return false;
 }
 
 /* ============================================================================
- * 入口点
+ * Entry point
  * ============================================================================ */
 
 /**
- * CLI 入口点
+ * CLI Entry point
  *
- * 功能描述：
- * - 从 process.argv 获取命令行参数
- * - 执行 CLI 并根据结果退出进程
- * - 成功退出码为 0，失败退出码为 1
+ * Description:
+ * - Get command-line arguments from process.argv
+ * - Execute CLI and exit process based on result
+ * - Exit code 0 on success, 1 on failure
  */
 const rawArgs = process.argv.slice(2);
 const cliArgs = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs;
@@ -285,10 +285,10 @@ runCli(cliArgs)
 		process.exit(success ? 0 : 1);
 	})
 	.catch((err) => {
-		console.error(`致命错误: ${err.message}`);
+		console.error(`Fatal error: ${err.message}`);
 		closeWorkspaceSocket();
 		process.exit(1);
 	});
 
-// 导出模块供外部使用
+// Export modules for external use
 export { CLI_MODULES };

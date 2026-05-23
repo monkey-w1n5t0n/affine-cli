@@ -1,19 +1,19 @@
 /**
- * 模块名称：config.ts
- * 配置工具模块
+ * Module: config.ts
+ * Configuration utility module
  *
- * 功能描述：
- * - 提供配置文件读写功能
- * - 管理环境变量和配置文件
- * - 验证和规范化 Affine 服务器 URL
- * - 加载完整配置并提供默认工作区 ID
+ * Description:
+ * - Provides config file read/write functionality
+ * - Manages environment variables and config files
+ * - Validates and normalizes Affine server URLs
+ * - Loads full config and provides default workspace ID
  *
- * 配置加载优先级：环境变量 > 本地 .env > 全局 ~/.affine-cli/affine-cli.env
+ * Config loading priority: env vars > local .env > global ~/.affine-cli/affine-cli.env
  *
- * 导出的配置项：
- * - AFFINE_BASE_URL: Affine 服务器地址（默认 https://app.affine.pro）
- * - AFFINE_API_TOKEN: 认证凭据
- * - AFFINE_WORKSPACE_ID: 默认工作区 ID
+ * Exported config items:
+ * - AFFINE_BASE_URL: Affine server URL (default https://app.affine.pro)
+ * - AFFINE_API_TOKEN: Auth credentials
+ * - AFFINE_WORKSPACE_ID: Default workspace ID
  */
 
 import * as fs from 'fs';
@@ -21,32 +21,32 @@ import * as os from 'os';
 import * as path from 'path';
 
 /**
- * GLOBAL_CONFIG_DIR: 全局配置文件目录
- * 路径：~/.affine-cli/
+ * GLOBAL_CONFIG_DIR: Global config directory
+ * Path: ~/.affine-cli/
  */
 export const GLOBAL_CONFIG_DIR = path.join(os.homedir(), '.affine-cli');
 
 /**
- * GLOBAL_CONFIG_FILE: 全局配置文件路径
- * 路径：~/.affine-cli/affine-cli.env
+ * GLOBAL_CONFIG_FILE: Global config file path
+ * Path: ~/.affine-cli/affine-cli.env
  */
 export const GLOBAL_CONFIG_FILE = path.join(GLOBAL_CONFIG_DIR, 'affine-cli.env');
 
 /**
- * LOCAL_CONFIG_FILE: 本地配置文件路径
- * 路径：<当前工作目录>/.env
+ * LOCAL_CONFIG_FILE: Local config file path
+ * Path: <current working directory>/.env
  */
 export const LOCAL_CONFIG_FILE = path.join(process.cwd(), '.env');
 
 /**
- * readKeyValueFile: 读取 key=value 格式的配置文件
+ * readKeyValueFile: Read key=value format config file
  *
- * @param filePath - 配置文件路径
- * @returns 配置键值对对象，文件不存在时返回空对象
+ * @param filePath - Config file path
+ * @returns Config key-value object, empty object if file does not exist
  *
- * 注意事项：
- * - 跳过空行和以 # 开头的注释行
- * - 使用 = 作为键值分隔符
+ * Notes:
+ * - Skip empty lines and lines starting with #
+ * - Use = as key-value separator
  */
 export function readKeyValueFile(filePath: string): Record<string, string> {
 	if (!fs.existsSync(filePath)) return {};
@@ -63,14 +63,14 @@ export function readKeyValueFile(filePath: string): Record<string, string> {
 }
 
 /**
- * loadConfigFile: 加载配置文件的合并结果
+ * loadConfigFile: Load merged config file results
  *
- * @returns 合并后的配置键值对对象
+ * @returns Merged config key-value object
  *
- * 配置优先级（从高到低）：
- * - 环境变量（process.env）
- * - 本地 .env（LOCAL_CONFIG_FILE）
- * - 全局配置文件（GLOBAL_CONFIG_FILE）
+ * Config priority (high to low):
+ * - Environment variables (process.env)
+ * - Local .env (LOCAL_CONFIG_FILE)
+ * - Global config file (GLOBAL_CONFIG_FILE)
  */
 export function loadConfigFile(): Record<string, string> {
 	const globalConfig = readKeyValueFile(GLOBAL_CONFIG_FILE);
@@ -83,14 +83,14 @@ export function loadConfigFile(): Record<string, string> {
 }
 
 /**
- * writeConfigFile: 写入配置文件
+ * writeConfigFile: Write config file
  *
- * @param vars - 配置键值对
- * @param useLocal - 是否写入本地配置文件，默认 false 写入全局配置
+ * @param vars - Config key-value pairs
+ * @param useLocal - Whether to write local config file, default false writes to global config
  *
- * 注意事项：
- * - 全局配置写入使用原子操作（先写临时文件再重命名）
- * - 本地配置直接写入当前目录的 .env 文件
+ * Notes:
+ * - Global config write uses atomic operation (write temp file then rename)
+ * - Local config writes directly to .env in current directory
  */
 export function writeConfigFile(vars: Record<string, string>, useLocal: boolean = false) {
 	const configDir = useLocal ? process.cwd() : GLOBAL_CONFIG_DIR;
@@ -125,48 +125,48 @@ export function writeConfigFile(vars: Record<string, string>, useLocal: boolean 
 }
 
 /**
- * validateBaseUrl: 验证并规范化 URL
+ * validateBaseUrl: Validate and normalize URL
  *
- * @param input - 输入的 URL 字符串
- * @returns 规范化后的 URL（去除尾部斜杠）
- * @throws 如果 URL 无效或协议不支持
+ * @param input - Input URL string
+ * @returns Normalized URL (trailing slash removed)
+ * @throws If URL is invalid or protocol is unsupported
  *
- * 注意事项：
- * - 不支持嵌入式凭据（user:pass@host）
- * - 仅支持 http/https 协议
- * - 非本地 HTTP URL 会输出警告
+ * Notes:
+ * - Embedded credentials not supported (user:pass@host)
+ * - Only http/https protocols supported
+ * - Non-local HTTP URLs produce a warning
  */
 export function validateBaseUrl(input: string): string {
 	let parsed: URL;
 	try {
 		parsed = new URL(input);
 	} catch {
-		throw new Error(`无效的 URL: ${input}`);
+		throw new Error(`Invalid URL: ${input}`);
 	}
 	if (parsed.username || parsed.password) {
-		throw new Error('URL 不能包含嵌入式凭据 (user:pass@host)');
+		throw new Error('URL cannot contain embedded credentials (user:pass@host)');
 	}
 	if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-		throw new Error(`不支持的 URL 协议: ${parsed.protocol} (仅支持 http/https)`);
+		throw new Error(`Unsupported URL protocol: ${parsed.protocol} (only http/https supported)`);
 	}
 	const host = parsed.hostname;
 	const isLocal =
 		host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0';
 	if (parsed.protocol === 'http:' && !isLocal) {
-		console.error('警告: 使用非本地 HTTP URL，建议使用 HTTPS');
+		console.error('Warning: Using non-local HTTP URL, HTTPS recommended');
 	}
 	return parsed.origin + parsed.pathname.replace(/\/$/, '');
 }
 
 /**
- * env: 获取生效的配置值
+ * env: Get effective config value
  *
- * @param name - 环境变量名
- * @param file - 配置文件对象
- * @param fallback - 备用值
- * @returns 配置值
+ * @param name - Environment variable name
+ * @param file - Config file object
+ * @param fallback - Fallback value
+ * @returns Config value
  *
- * 优先级（从高到低）：环境变量 > 配置文件 > 备用值
+ * Priority (high to low): env vars > config file > fallback
  */
 function env(name: string, file: Record<string, string>, fallback?: string): string | undefined {
 	return process.env[name] || file[name] || fallback;
@@ -179,13 +179,13 @@ export function clearConfigCache() {
 }
 
 /**
- * loadConfig: 加载完整配置
+ * loadConfig: Load full config
  *
- * @returns 配置对象，包含 baseUrl、apiToken、cookie、defaultWorkspaceId
+ * @returns Config object with baseUrl, apiToken, cookie, defaultWorkspaceId
  *
- * 注意事项：
- * - AFFINE_BASE_URL 默认值为 https://app.affine.pro
- * - 其他配置项无默认值，从环境变量或配置文件读取
+ * Notes:
+ * - AFFINE_BASE_URL defaults to https://app.affine.pro
+ * - Other config items have no default, read from env vars or config file
  */
 export function loadConfig() {
 	if (cachedConfig) return cachedConfig;
@@ -204,12 +204,12 @@ export function loadConfig() {
 }
 
 /**
- * redactSecret: 脱敏显示密钥
+ * redactSecret: Redact secret for display
  *
- * @param value - 原始密钥
- * @returns 脱敏后的值
+ * @param value - Raw secret
+ * @returns Redacted value
  *
- * 使用示例：
+ * Usage examples:
  * - "abc123" → "****3"
  * - "longer-secret-key" → "abcd…ey"
  */
@@ -220,24 +220,24 @@ export function redactSecret(value: string | undefined): string | null {
 }
 
 /**
- * getWorkspaceId: 获取工作区 ID
+ * getWorkspaceId: Get workspace ID
  *
- * @param paramsWorkspaceId - 可选的工作区 ID 参数
- * @returns 工作区 ID
- * @throws 如果未指定工作区 ID 且配置中也没有设置
+ * @param paramsWorkspaceId - Optional workspace ID parameter
+ * @returns Workspace ID
+ * @throws If workspace ID not specified and not set in config
  *
- * 优先级（从高到低）：
- * - 参数 paramsWorkspaceId
- * - 配置中的 AFFINE_WORKSPACE_ID
+ * Priority (high to low):
+ * - Parameter paramsWorkspaceId
+ * - Config AFFINE_WORKSPACE_ID
  *
- * 使用示例：
- * - getWorkspaceId() // 使用配置中的默认工作区
- * - getWorkspaceId('workspace-123') // 使用参数指定的工作区
+ * Usage examples:
+ * - getWorkspaceId() // Use default workspace from config
+ * - getWorkspaceId('workspace-123') // Use workspace specified by parameter
  */
 /**
- * 获取 Affine 基础 URL
+ * Get Affine base URL
  *
- * @returns 基础 URL（默认 https://app.affine.pro）
+ * @returns Base URL (default https://app.affine.pro)
  */
 export function getBaseUrl(): string {
 	const config = loadConfig();
@@ -245,30 +245,30 @@ export function getBaseUrl(): string {
 }
 
 /**
- * 获取工作区 ID
+ * Get workspace ID
  *
- * 优先级：参数 > 环境变量/配置文件 > 报错
+ * Priority: parameter > env vars/config > error
  *
- * @param paramsWorkspaceId - 可选的 workspace ID 参数
- * @returns 工作区 ID
- * @throws 如果没有配置 workspaceId
+ * @param paramsWorkspaceId - Optional workspace ID parameter
+ * @returns Workspace ID
+ * @throws If workspaceId is not configured
  */
 export function getWorkspaceId(paramsWorkspaceId?: string): string {
 	const config = loadConfig();
 	const workspaceId = paramsWorkspaceId || config.defaultWorkspaceId;
 	if (!workspaceId) {
 		throw new Error(
-			'未指定工作区 ID，请使用 --workspace 参数或在配置中设置 AFFINE_WORKSPACE_ID'
+			'Workspace ID not specified. Use --workspace parameter or set AFFINE_WORKSPACE_ID in config'
 		);
 	}
 	return workspaceId;
 }
 
 /**
- * 获取 API 配置
+ * Get API config
  *
- * @param paramsWorkspaceId - 可选的工作区 ID 参数
- * @returns API 配置对象，包含 apiUrl、apiToken、workspaceId
+ * @param paramsWorkspaceId - Optional workspace ID parameter
+ * @returns API config object with apiUrl, apiToken, workspaceId
  */
 export function getApiConfig() {
 	const config = loadConfig();

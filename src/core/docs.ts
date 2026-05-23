@@ -1,6 +1,6 @@
 /**
- * 文档核心模块
- * 处理文档的增删改查、搜索、复制、更新、追加等操作
+ * Document core module
+ * Handles CRUD, search, copy, update, append, and other document operations
  */
 
 import { createGraphQLClient } from '../utils/graphqlClient.js';
@@ -33,22 +33,22 @@ import * as fs from 'fs';
 import * as Y from 'yjs';
 
 /**
- * docAllHandler: 列出工作区所有文档，包含已删除的文档记录
+ * docAllHandler: List all documents in the workspace, including deleted document records
  *
- * 功能描述：
- * - 通过 GraphQL API 获取文档列表
- * - 通过 WebSocket 获取文档实时标题信息
- * - 返回分页信息和文档元数据
+ * Description:
+ * - Fetches document list via GraphQL API
+ * - Fetches real-time document title info via WebSocket
+ * - Returns pagination info and document metadata
  *
- * @param params.count - 每页返回数量，默认 50
- * @param params.skip - 跳过记录数，用于分页
- * @param params.after - 游标，用于分页
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 返回文档总数、是否有下一页、游标和文档列表
+ * @param params.count - Number of results per page, default 50
+ * @param params.skip - Number of records to skip, for pagination
+ * @param params.after - Cursor, for pagination
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Returns total document count, whether there is a next page, cursor, and document list
  *
- * 注意事项：
- * - 文档标题优先使用 WebSocket 实时获取的标题，若无则使用 GraphQL 返回的标题
- * - 若两者都没有标题，返回 '未命名文档'
+ * Notes:
+ * - Document title prefers the WebSocket real-time title, falling back to the GraphQL title
+ * - If neither has a title, returns 'Untitled'
  */
 export async function docAllHandler(params: {
 	count?: number;
@@ -117,26 +117,26 @@ export async function docAllHandler(params: {
 }
 
 /**
- * docInfoHandler: 获取单个文档的详细信息
+ * docInfoHandler: Get detailed info for a single document
  *
- * 功能描述：
- * - 通过 GraphQL 获取文档元数据（标题、摘要、创建时间等）
- * - 通过 WebSocket 连接获取实时文档内容和标签信息
- * - 支持三种内容输出模式：markdown（默认）、raw、hidden
+ * Description:
+ * - Fetches document metadata via GraphQL (title, summary, creation time, etc.)
+ * - Fetches real-time document content and tags via WebSocket connection
+ * - Supports three content output modes: markdown (default), raw, hidden
  *
- * @param params.id - 文档 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @param params.content - 内容输出模式：
- *   - markdown（默认）：输出渲染后的 Markdown 格式
- *   - raw：输出原始 blocks 数据
- *   - hidden：仅输出元数据，不包含内容
- * @returns 包含文档元数据和可选内容的对象
+ * @param params.id - Document ID (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @param params.content - Content output mode:
+ *   - markdown (default): output rendered Markdown format
+ *   - raw: output raw blocks data
+ *   - hidden: output metadata only, no content
+ * @returns Object containing document metadata and optional content
  *
- * 注意事项：
- * - hidden 模式下不建立 WebSocket 连接，直接返回元数据
- * - 标签信息从工作区元数据中提取
- * - raw 模式返回 blocksById 和 blockCount
- * - markdown 模式返回渲染结果、警告、统计和信息丢失标记
+ * Notes:
+ * - hidden mode does not establish a WebSocket connection, returns metadata directly
+ * - Tag info is extracted from workspace metadata
+ * - raw mode returns blocksById and blockCount
+ * - markdown mode returns rendered result, warnings, stats, and lossy flag
  */
 export async function docInfoHandler(params: {
 	id: string;
@@ -169,7 +169,7 @@ export async function docInfoHandler(params: {
 
 	const doc = data.workspace.doc;
 	if (!doc) {
-		throw new Error(`文档 ${params.id} 不存在`);
+		throw new Error(`Document ${params.id} does not exist`);
 	}
 
 	const pagesInfo = await getWorkspaceDocs(workspaceId);
@@ -177,7 +177,7 @@ export async function docInfoHandler(params: {
 
 	const result: any = {
 		id: doc.id,
-		title: pageInfo?.title || doc.title || '未命名文档',
+		title: pageInfo?.title || doc.title || 'Untitled',
 		summary: doc.summary,
 		public: doc.public,
 		mode: doc.mode,
@@ -186,21 +186,21 @@ export async function docInfoHandler(params: {
 		updatedAt: new Date(doc.updatedAt).toLocaleString('zh-CN')
 	};
 
-	// 默认使用 markdown 模式
+	// Default to markdown mode
 	const contentMode = params.content || 'markdown';
 
-	// hidden 模式不输出内容
+	// hidden mode: no content output
 	if (contentMode === 'hidden') {
 		return result;
 	}
 
-	// 连接 WebSocket 获取文档内容
+	// Connect WebSocket to get document content
 	const socket = await createWorkspaceSocket();
 
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 加载文档内容
+		// Load document content
 		const snap = await loadDoc(socket, workspaceId, params.id);
 		if (snap.missing) {
 			const doc = new Y.Doc();
@@ -209,11 +209,11 @@ export async function docInfoHandler(params: {
 			const collected = collectDocForMarkdown(doc);
 
 			if (contentMode === 'raw') {
-				// raw 模式：输出原始 blocks 数据
+				// raw mode: output raw blocks data
 				result.blocks = Object.fromEntries(collected.blocksById);
 				result.blockCount = collected.blocksById.size;
 			} else {
-				// markdown 模式（默认）：输出 Markdown
+				// markdown mode (default): output Markdown
 				const rendered = renderBlocksToMarkdown({
 					rootBlockIds: collected.rootBlockIds,
 					blocksById: collected.blocksById
@@ -232,25 +232,25 @@ export async function docInfoHandler(params: {
 }
 
 /**
- * docCreateHandler: 创建新文档
+ * docCreateHandler: Create a new document
  *
- * 功能描述：
- * - 使用 Markdown 导入方式创建新文档
- * - 支持设置标题、内容、所属文件夹和标签
- * - 内部调用 createDocFromMarkdownCore 核心函数完成创建
+ * Description:
+ * - Creates a new document using Markdown import
+ * - Supports setting title, content, folder, and tags
+ * - Internally calls createDocFromMarkdownCore to complete creation
  *
- * @param params.title - 文档标题（可选）
- * @param params.content - 文档内容，支持 Markdown 格式（可选）
- * @param params.folder - 所属文件夹 ID（可选）
- * @param params.tags - 标签，多个用逗号分隔（可选）
- * @param params.icon - 文档图标（emoji 字符）（可选）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含创建结果的对象，包括文档 ID、标题、标签等
+ * @param params.title - Document title (optional)
+ * @param params.content - Document content, supports Markdown format (optional)
+ * @param params.folder - Parent folder ID (optional)
+ * @param params.tags - Tags, comma-separated (optional)
+ * @param params.icon - Document icon (emoji character) (optional)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing creation result, including document ID, title, tags, etc.
  *
- * 注意事项：
- * - 若未提供标题，使用默认空标题创建文档
- * - 若未提供内容，创建空文档
- * - 返回结果包含 warnings 和 lossy 标记，用于提示潜在的内容丢失
+ * Notes:
+ * - If no title is provided, creates document with default empty title
+ * - If no content is provided, creates empty document
+ * - Return result includes warnings and lossy flags to indicate potential content loss
  */
 export async function docCreateHandler(params: {
 	title?: string;
@@ -264,7 +264,7 @@ export async function docCreateHandler(params: {
 
 	let markdown = params.content || '';
 
-	// 只有明确提供了 title 才使用，否则让 createDocFromMarkdownCore 自动生成标题
+	// Only use title if explicitly provided; otherwise let createDocFromMarkdownCore auto-generate it
 	const title = params.title;
 
 	const result = await createDocFromMarkdownCore({
@@ -275,7 +275,7 @@ export async function docCreateHandler(params: {
 		folder: params.folder
 	});
 
-	// 如果提供了 icon，设置文档图标
+	// If icon is provided, set document icon
 	if (params.icon) {
 		await setDocEmojiIcon(workspaceId, result.docId, params.icon);
 	}
@@ -287,21 +287,21 @@ export async function docCreateHandler(params: {
 }
 
 /**
- * docDeleteHandler: 删除指定文档
+ * docDeleteHandler: Delete a document
  *
- * 功能描述：
- * - 通过 WebSocket 连接操作 Yjs 文档
- * - 从工作区的 pages 列表中移除指定文档的引用
- * - 实际删除操作会标记该文档为已删除
+ * Description:
+ * - Operates on the Yjs document via WebSocket connection
+ * - Removes the document reference from the workspace pages list
+ * - The actual delete operation marks the document as deleted
  *
- * @param params.id - 要删除的文档 ID（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 删除结果对象
+ * @param params.id - Document ID to delete (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Deletion result object
  *
- * 注意事项：
- * - 该操作仅从工作区页面列表中移除文档引用
- * - 实际的文档数据可能仍然存在于服务器上
- * - 需要建立 WebSocket 连接才能执行删除操作
+ * Notes:
+ * - This only removes the document reference from the workspace pages list
+ * - Actual document data may still exist on the server
+ * - Requires a WebSocket connection to perform deletion
  */
 export async function docDeleteHandler(params: { id: string; workspace?: string }): Promise<any> {
 	const workspaceId = getWorkspaceId(params.workspace);
@@ -313,7 +313,7 @@ export async function docDeleteHandler(params: { id: string; workspace?: string 
 		const wsDoc = new Y.Doc();
 		const snapshot = await loadDoc(socket, workspaceId, workspaceId);
 		if (!snapshot.missing) {
-			throw new Error('工作区根文档不存在');
+			throw new Error('Workspace root document does not exist');
 		}
 
 		Y.applyUpdate(wsDoc, Buffer.from(snapshot.missing, 'base64'));
@@ -338,34 +338,34 @@ export async function docDeleteHandler(params: { id: string; workspace?: string 
 
 		return {
 			success: true,
-			message: `文档 ${params.id} 已删除`
+			message: `Document ${params.id} deleted`
 		};
 	} finally {
 	}
 }
 
 /**
- * docCopyHandler: 复制文档
+ * docCopyHandler: Copy a document
  *
- * 功能描述：
- * - 复制源文档的内容到一个新文档
- * - 保留源文档的标签和父文档信息
- * - 支持自定义新文档的标题、目标父文档和文件夹
- * - 内部通过 WebSocket + Yjs 完成复制操作
+ * Description:
+ * - Copies source document content to a new document
+ * - Preserves source document tags and parent document info
+ * - Supports custom title, target parent document, and folder for the new document
+ * - Internally completes the copy via WebSocket + Yjs
  *
- * @param params.id - 源文档 ID（必需）
- * @param params.title - 新文档标题，默认 '复制文档'
- * @param params.parent - 父文档 ID，新文档将作为其子文档（可选）
- * @param params.folder - 文件夹 ID，新文档将放入该文件夹（可选）
- *   - 若未指定，默认继承源文档的文件夹
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含新文档 ID 和标题的结果对象
+ * @param params.id - Source document ID (required)
+ * @param params.title - New document title, defaults to 'Copy of document'
+ * @param params.parent - Parent document ID, new document will be a child of it (optional)
+ * @param params.folder - Folder ID, new document will be placed in this folder (optional)
+ *   - If not specified, inherits the source document's folder by default
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Result object containing new document ID and title
  *
- * 注意事项：
- * - 复制操作会为新文档生成新的唯一 ID
- * - 源文档的标签会被复制到新文档
- * - 源文档的父文档信息可以被继承或覆盖
- * - 源文档的文件夹可以被继承或指定新的文件夹
+ * Notes:
+ * - Copy operation generates a new unique ID for the new document
+ * - Source document tags are copied to the new document
+ * - Source document parent info can be inherited or overridden
+ * - Source document folder can be inherited or a new folder specified
  */
 export async function docCopyHandler(params: {
 	id: string;
@@ -378,17 +378,17 @@ export async function docCopyHandler(params: {
 	const socket = await createWorkspaceSocket();
 
 	const newDocId = generateId(12, 'doc');
-	const newTitle = params.title || '复制文档';
+	const newTitle = params.title || 'Copy of document';
 
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 获取源文档信息（标签和父文档）
+		// Get source document info (tags and parent document)
 		const sourceDocInfo = await getSourceDocInfo(socket, workspaceId, params.id);
 		const sourceTags = sourceDocInfo.tags || [];
 		const sourceParent = sourceDocInfo.parentId;
 
-		// 获取源文档所在文件夹
+		// Get the folder containing the source document
 		let sourceFolderId: string | null = null;
 		if (!params.folder) {
 			sourceFolderId = await getDocFolderId(socket, workspaceId, params.id);
@@ -400,7 +400,7 @@ export async function docCopyHandler(params: {
 			params.id
 		);
 		if (!sourceSnapshotExists) {
-			throw new Error('源文档不存在');
+			throw new Error('Source document does not exist');
 		}
 		const sourceUpdate = Y.encodeStateAsUpdate(sourceDoc);
 
@@ -438,7 +438,7 @@ export async function docCopyHandler(params: {
 			wsMeta.set('pages', pages);
 		}
 
-		// 复制源文档的标签
+		// Copy source document tags
 		const newTags = new Y.Array<any>();
 		sourceTags.forEach((tagId: string) => {
 			newTags.push([tagId]);
@@ -449,7 +449,7 @@ export async function docCopyHandler(params: {
 		entry.set('title', newTitle);
 		entry.set('createDate', Date.now());
 		entry.set('tags', newTags);
-		// 复制父文档 ID（如果有）
+		// Copy parent document ID (if any)
 		if (params.parent) {
 			entry.set('parentId', params.parent);
 		} else if (sourceParent) {
@@ -459,7 +459,7 @@ export async function docCopyHandler(params: {
 
 		await updateYDoc(socket, workspaceId, workspaceId, wsDoc, prevSV);
 
-		// 如果没有指定 folder，则继承源文档的文件夹；否则添加到指定文件夹
+		// If no folder specified, inherit source document's folder; otherwise add to specified folder
 		const targetFolderId = params.folder || sourceFolderId;
 		if (targetFolderId) {
 			await addDocToFolder(socket, workspaceId, newDocId, targetFolderId);
@@ -475,21 +475,21 @@ export async function docCopyHandler(params: {
 }
 
 /**
- * getSourceDocInfo: 获取源文档的信息（标签和父文档 ID）
+ * getSourceDocInfo: Get source document info (tags and parent document ID)
  *
- * 功能描述：
- * - 从工作区元数据中查找指定文档的信息
- * - 提取该文档关联的标签 ID 列表
- * - 获取该文档的父文档 ID（如果有）
+ * Description:
+ * - Looks up the specified document's info from workspace metadata
+ * - Extracts the tag ID list associated with the document
+ * - Gets the parent document ID (if any)
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 要查询的文档 ID
- * @returns 包含 tags（标签 ID 数组）和 parentId（父文档 ID）的对象
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID to query
+ * @returns Object containing tags (tag ID array) and parentId (parent document ID)
  *
- * 注意事项：
- * - 返回的 tags 是标签 ID，不是标签名称
- * - 若文档没有标签或父文档，返回空数组和 null
+ * Notes:
+ * - Returned tags are tag IDs, not tag names
+ * - If the document has no tags or parent, returns empty array and null
  */
 async function getSourceDocInfo(
 	socket: any,
@@ -535,22 +535,22 @@ async function getSourceDocInfo(
 }
 
 /**
- * getDocFolderId: 获取文档所在的文件夹 ID
+ * getDocFolderId: Get the folder ID containing a document
  *
- * 功能描述：
- * - 查询工作区的文件夹结构
- * - 遍历所有文件夹链接，找到指向目标文档的文件夹
- * - 返回该文档的父文件夹 ID
+ * Description:
+ * - Queries the workspace folder structure
+ * - Iterates all folder links to find the folder pointing to the target document
+ * - Returns the parent folder ID of the document
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @returns 文件夹 ID，若文档不在任何文件夹中则返回 null
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @returns Folder ID, or null if the document is not in any folder
  *
- * 注意事项：
- * - 使用特殊的文档 ID（db${workspaceId}$folders）访问文件夹数据
- * - 遍历文件夹链接记录，查找 type='doc' 且 data=docId 的记录
- * - 返回记录的 parentId，即为文档所在的文件夹
+ * Notes:
+ * - Uses special document ID (db${workspaceId}$folders) to access folder data
+ * - Iterates folder link records, looking for type='doc' and data=docId
+ * - Returns the record's parentId, which is the folder containing the document
  */
 async function getDocFolderId(
 	socket: any,
@@ -581,22 +581,22 @@ async function getDocFolderId(
 }
 
 /**
- * addDocToFolder: 将文档添加到指定文件夹
+ * addDocToFolder: Add a document to a specified folder
  *
- * 功能描述：
- * - 在文件夹的子项中添加一个新的文档链接记录
- * - 自动计算并分配正确的排序索引
- * - 通过 WebSocket + Yjs 更新文件夹数据
+ * Description:
+ * - Adds a new document link record to the folder's children
+ * - Automatically calculates and assigns the correct sort index
+ * - Updates folder data via WebSocket + Yjs
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 要添加的文档 ID
- * @param folderId - 目标文件夹 ID
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID to add
+ * @param folderId - Target folder ID
  *
- * 注意事项：
- * - 使用特殊的文档 ID（db${workspaceId}$folders）访问文件夹数据
- * - 找到目标文件夹中子项的最大 index，新链接的 index 设为 maxIndex + 1
- * - 创建新链接记录，包含 id、type、data、parentId、index 字段
+ * Notes:
+ * - Uses special document ID (db${workspaceId}$folders) to access folder data
+ * - Finds the max index among folder children, sets new link index to maxIndex + 1
+ * - Creates new link record with id, type, data, parentId, index fields
  */
 async function addDocToFolder(
 	socket: any,
@@ -623,7 +623,7 @@ async function addDocToFolder(
 		});
 	}
 
-	// 找到文件夹的子项中最大的 index
+	// Find the max index among folder children
 	let maxIndex = 0;
 	const folderChildren = nodes.filter((n: any) => n.parentId === folderId && n.type === 'doc');
 	folderChildren.forEach((n: any) => {
@@ -644,27 +644,27 @@ async function addDocToFolder(
 }
 
 /**
- * docUpdateHandler: 更新文档属性
+ * docUpdateHandler: Update document properties
  *
- * 功能描述：
- * - 支持更新文档的标题、文件夹和父文档
- * - 通过 WebSocket + Yjs 进行实时更新
- * - 标题更新会同时更新工作区元数据和文档本身
- * - 文件夹更新会先从原文件夹移除，再添加到新文件夹
+ * Description:
+ * - Supports updating document title, folder, and parent document
+ * - Real-time updates via WebSocket + Yjs
+ * - Title update simultaneously updates workspace metadata and the document itself
+ * - Folder update removes from original folder first, then adds to new folder
  *
- * @param params.id - 要更新的文档 ID（必需）
- * @param params.title - 新标题（可选）
- * @param params.parent - 父文档 ID（可选，目前未实现）
- * @param params.folder - 文件夹 ID（可选）
- * @param params.icon - 文档图标（emoji 字符）（可选）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含更新结果的对象
+ * @param params.id - Document ID to update (required)
+ * @param params.title - New title (optional)
+ * @param params.parent - Parent document ID (optional, not yet implemented)
+ * @param params.folder - Folder ID (optional)
+ * @param params.icon - Document icon (emoji character) (optional)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing update results
  *
- * 注意事项：
- * - 标题不能为空，否则抛出异常
- * - 文件夹更新会先清除所有现有文件夹关联
- * - 父文档更新功能目前尚未实现
- * - 返回消息列出了所有成功的更新操作
+ * Notes:
+ * - Title must not be empty, otherwise throws an error
+ * - Folder update clears all existing folder associations first
+ * - Parent document update is not yet implemented
+ * - Return message lists all successful update operations
  */
 export async function docUpdateHandler(params: {
 	id: string;
@@ -682,20 +682,20 @@ export async function docUpdateHandler(params: {
 
 		const results: string[] = [];
 
-		// 更新文档图标
+		// Update document icon
 		if (params.icon) {
 			await setDocEmojiIcon(workspaceId, params.id, params.icon);
-			results.push('图标已更新');
+			results.push('Icon updated');
 		}
 
-		// 更新文档标题
+		// Update document title
 		if (params.title) {
 			const newTitle = params.title.trim();
 			if (!newTitle) {
-				throw new Error('标题不能为空');
+				throw new Error('Title must not be empty');
 			}
 
-			// 更新工作区元数据中的文档标题
+			// Update document title in workspace metadata
 			const wsSnap = await loadDoc(socket, workspaceId, workspaceId);
 			if (wsSnap.missing) {
 				const wsDoc = new Y.Doc();
@@ -712,7 +712,7 @@ export async function docUpdateHandler(params: {
 				await updateYDoc(socket, workspaceId, workspaceId, wsDoc, prevSV);
 			}
 
-			// 更新文档本身的标题
+			// Update the title within the document itself
 			const snap = await loadDoc(socket, workspaceId, params.id);
 			if (snap.missing) {
 				const doc = new Y.Doc();
@@ -731,15 +731,15 @@ export async function docUpdateHandler(params: {
 				await updateYDoc(socket, workspaceId, params.id, doc, prevSV);
 			}
 
-			results.push('标题已更新');
+			results.push('Title updated');
 		}
 
-		// 更新文件夹
+		// Update folder
 		if (params.folder) {
-			// 先从原文件夹移除
+			// First remove from original folder
 			await removeDocFromAllFolders(socket, workspaceId, params.id);
 
-			// 添加到新文件夹
+			// Add to new folder
 			const foldersDocId = `db$${workspaceId}$folders`;
 			const { doc: foldersDoc } = await fetchYDoc(socket, workspaceId, foldersDocId);
 
@@ -758,7 +758,7 @@ export async function docUpdateHandler(params: {
 				});
 			}
 
-			// 找到文件夹的子项中最大的 index
+			// Find the max index among folder children
 			let maxIndex = 0;
 			const folderChildren = nodes.filter(
 				(n) => n.parentId === params.folder && n.type === 'doc'
@@ -769,7 +769,7 @@ export async function docUpdateHandler(params: {
 				}
 			});
 
-			// 创建新的链接记录
+			// Create new link record
 			const linkId = generateId(12, 'link');
 			const record = foldersDoc.getMap(linkId);
 			record.set('id', linkId);
@@ -780,39 +780,39 @@ export async function docUpdateHandler(params: {
 
 			await updateYDoc(socket, workspaceId, foldersDocId, foldersDoc);
 
-			results.push('文件夹已更新');
+			results.push('Folder updated');
 		}
 
-		// 更新父文档
+		// Update parent document
 		if (params.parent) {
-			// 这里需要通过 embed-linked-doc 来实现
-			results.push('父文档更新功能待实现');
+			// This needs to be implemented via embed-linked-doc
+			results.push('Parent document update not yet implemented');
 		}
 
 		return {
 			success: true,
-			message: results.length > 0 ? results.join(', ') : '无更新内容'
+			message: results.length > 0 ? results.join(', ') : 'No updates'
 		};
 	} finally {
 	}
 }
 
 /**
- * removeDocFromAllFolders: 从所有文件夹中移除指定文档
+ * removeDocFromAllFolders: Remove a document from all folders
  *
- * 功能描述：
- * - 遍历工作区的所有文件夹链接
- * - 找到所有指向目标文档的记录
- * - 将这些记录的 $$DELETED 标记设为 true，实现软删除
+ * Description:
+ * - Iterates all folder links in the workspace
+ * - Finds all records pointing to the target document
+ * - Sets the $$DELETED flag to true on those records for soft deletion
  *
- * @param socket - WebSocket 连接对象
- * @param workspaceId - 工作区 ID
- * @param docId - 要移除的文档 ID
+ * @param socket - WebSocket connection object
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID to remove
  *
- * 注意事项：
- * - 使用软删除方式，通过设置 $$DELETED 标记
- * - 只有当有实际需要删除的链接时才推送更新
- * - 使用特殊的文档 ID（db${workspaceId}$folders）访问文件夹数据
+ * Notes:
+ * - Uses soft deletion by setting the $$DELETED flag
+ * - Only pushes update when there are actual links to delete
+ * - Uses special document ID (db${workspaceId}$folders) to access folder data
  */
 async function removeDocFromAllFolders(
 	socket: any,
@@ -832,7 +832,7 @@ async function removeDocFromAllFolders(
 		const type = record.get('type');
 		const data = record.get('data');
 
-		// 找到所有指向该文档的记录
+		// Find all records pointing to this document
 		if (type === 'doc' && data === docId) {
 			record.set('$$DELETED', true);
 			hasChanges = true;
@@ -845,26 +845,26 @@ async function removeDocFromAllFolders(
 }
 
 /**
- * docSearchHandler: 搜索文档
+ * docSearchHandler: Search documents
  *
- * 功能描述：
- * - 通过 WebSocket 获取工作区中的所有文档
- * - 支持按标题、ID 进行关键词搜索
- * - 支持按标签进行过滤
- * - 支持多种匹配模式：substring（子串）、prefix（前缀）、suffix（后缀）、exact（精确）
+ * Description:
+ * - Fetches all documents in the workspace via WebSocket
+ * - Supports keyword search by title and ID
+ * - Supports filtering by tags
+ * - Supports multiple match modes: substring, prefix, suffix, exact
  *
- * @param params.query - 搜索关键词（可选）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @param params.count - 返回结果数量限制，默认 20
- * @param params.matchMode - 匹配模式：substring/prefix/suffix/exact，默认 substring
- * @param params.tag - 按标签过滤（可选，始终使用包含匹配）
- * @returns 包含匹配结果数量和文档列表的对象
+ * @param params.query - Search keyword (optional)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @param params.count - Max number of results, default 20
+ * @param params.matchMode - Match mode: substring/prefix/suffix/exact, default substring
+ * @param params.tag - Filter by tag (optional, always uses contains match)
+ * @returns Object containing match count and document list
  *
- * 注意事项：
- * - 标签过滤始终使用包含匹配（忽略大小写）
- * - 关键词搜索支持配置匹配模式，默认使用子串匹配
- * - 搜索会在标题和文档 ID 两个字段上进行
- * - 返回结果按文档创建时间降序排列（先创建的在前）
+ * Notes:
+ * - Tag filtering always uses contains match (case-insensitive)
+ * - Keyword search supports configurable match modes, defaulting to substring match
+ * - Search is performed on both title and document ID fields
+ * - Results are sorted by document creation time descending (earliest first)
  */
 export async function docSearchHandler(params: {
 	query?: string;
@@ -881,17 +881,17 @@ export async function docSearchHandler(params: {
 	const matchMode = params.matchMode || 'substring';
 
 	/**
-	 * matches: 根据匹配模式判断文本是否匹配
+	 * matches: Check if text matches based on match mode
 	 *
-	 * @param text - 要检查的文本
-	 * @param pattern - 匹配模式
-	 * @returns 是否匹配
+	 * @param text - Text to check
+	 * @param pattern - Match pattern
+	 * @returns Whether it matches
 	 *
-	 * 支持的匹配模式：
-	 * - substring: 子字符串包含匹配（默认）
-	 * - prefix: 前缀匹配
-	 * - suffix: 后缀匹配
-	 * - exact: 完全匹配（忽略大小写）
+	 * Supported match modes:
+	 * - substring: substring contains match (default)
+	 * - prefix: prefix match
+	 * - suffix: suffix match
+	 * - exact: exact match (case-insensitive)
 	 */
 	function matches(text: string, pattern: string): boolean {
 		const t = text.toLowerCase();
@@ -913,7 +913,7 @@ export async function docSearchHandler(params: {
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 获取工作区元数据
+		// Get workspace metadata
 		const { doc: wsDoc, exists: wsSnapExists } = await fetchYDoc(
 			socket,
 			workspaceId,
@@ -935,7 +935,7 @@ export async function docSearchHandler(params: {
 			};
 		}
 
-		// 收集文档信息
+		// Collect document info
 		const allDocs: any[] = [];
 		const tagOptions = getWorkspaceTagOptions(wsMeta);
 
@@ -946,7 +946,7 @@ export async function docSearchHandler(params: {
 			const createDate = page.get('createDate');
 			const updateDate = page.get('updateDate');
 
-			// 提取标签名称
+			// Extract tag names
 			const tagNames: string[] = [];
 			if (tagsArray) {
 				extractTagNames(tagsArray, tagOptions).forEach((name) => tagNames.push(name));
@@ -961,17 +961,17 @@ export async function docSearchHandler(params: {
 			});
 		});
 
-		// 过滤匹配的结果
+		// Filter matching results
 		let results = allDocs;
 
-		// 按标签过滤（标签始终使用包含匹配）
+		// Filter by tag (tag always uses contains match)
 		if (params.tag) {
 			results = results.filter((doc) =>
 				doc.tags.some((t: string) => t.toLowerCase().includes(params.tag!.toLowerCase()))
 			);
 		}
 
-		// 按关键词搜索（支持匹配模式）
+		// Search by keyword (supports match modes)
 		if (query) {
 			results = results.filter((doc) => {
 				const titleMatch = matches(doc.title, query);
@@ -980,7 +980,7 @@ export async function docSearchHandler(params: {
 			});
 		}
 
-		// 限制返回数量
+		// Limit result count
 		results = results.slice(0, limit);
 
 		return {
@@ -992,28 +992,28 @@ export async function docSearchHandler(params: {
 }
 
 /**
- * docReplaceHandler: 替换文档内容
+ * docReplaceHandler: Replace document content
  *
- * 功能描述：
- * - 在文档的所有文本块中搜索并替换指定内容
- * - 支持处理 Y.Text 类型和数组格式（deltas）的文本
- * - 支持预览模式和全部替换/仅替换第一个
- * - 替换操作会保留原始文本的属性信息
+ * Description:
+ * - Searches and replaces specified content across all text blocks in the document
+ * - Supports handling Y.Text type and array format (deltas) text
+ * - Supports preview mode and replace-all/replace-first
+ * - Replacement preserves original text attributes
  *
- * @param params.id - 要操作的文档 ID（必需）
- * @param params.search - 要搜索替换的文本（必需）
- * @param params.replace - 替换后的文本（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @param params.matchAll - 是否替换所有匹配项，默认 true
- * @param params.preview - 是否仅预览不实际执行替换，默认 false
- * @returns 包含替换结果的对象
+ * @param params.id - Document ID to operate on (required)
+ * @param params.search - Text to search and replace (required)
+ * @param params.replace - Replacement text (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @param params.matchAll - Whether to replace all matches, default true
+ * @param params.preview - Whether to preview only without executing replacement, default false
+ * @returns Object containing replacement results
  *
- * 注意事项：
- * - search 文本不能为空
- * - matchAll 默认为 true，即替换所有匹配项
- * - 预览模式下返回受影响的 block 列表，但不执行实际替换
- * - 非预览模式下返回受影响的 block 数量
- * - 仅处理文本类型的块（paragraph、list、code、page、note、callout）
+ * Notes:
+ * - search text must not be empty
+ * - matchAll defaults to true, replacing all matches
+ * - Preview mode returns affected block list without executing replacement
+ * - Non-preview mode returns affected block count
+ * - Only processes text-type blocks (paragraph, list, code, page, note, callout)
  */
 export async function docReplaceHandler(params: {
 	id: string;
@@ -1028,37 +1028,37 @@ export async function docReplaceHandler(params: {
 
 	const searchText = params.search;
 	const replaceText = params.replace;
-	// 默认为 true，处理布尔值或字符串形式的 false
+	// Default to true, handle boolean or string 'false'
 	const matchAllValue = params.matchAll;
 	const matchAll = matchAllValue !== false && String(matchAllValue) !== 'false';
 
 	if (!searchText) {
-		throw new Error('搜索文本不能为空');
+		throw new Error('Search text must not be empty');
 	}
 
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 加载文档
+		// Load document
 		const {
 			doc: doc,
 			exists: snapExists,
 			prevSV: prevSV
 		} = await fetchYDoc(socket, workspaceId, params.id);
 		if (!snapExists) {
-			throw new Error(`文档 ${params.id} 不存在`);
+			throw new Error(`Document ${params.id} does not exist`);
 		}
 		const blocks = doc.getMap('blocks') as Y.Map<any>;
 
 		let replaceCount = 0;
 		const affectedBlocks: string[] = [];
 
-		// 遍历所有块
+		// Iterate all blocks
 		for (const [blockId, blockRaw] of blocks.entries()) {
 			if (!(blockRaw instanceof Y.Map)) continue;
 
 			const flavour = blockRaw.get('sys:flavour');
-			// 只处理文本类型的块
+			// Only process text-type blocks
 			if (
 				![
 					'affine:paragraph',
@@ -1075,7 +1075,7 @@ export async function docReplaceHandler(params: {
 			const textProp = blockRaw.get('prop:text');
 			if (!textProp) continue;
 
-			// 处理 Y.Text 类型
+			// Handle Y.Text type
 			if (textProp instanceof Y.Text) {
 				const fullText = textProp.toString();
 				const occurrences = matchAll
@@ -1089,7 +1089,7 @@ export async function docReplaceHandler(params: {
 					affectedBlocks.push(blockId);
 
 					if (!params.preview) {
-						// 执行替换
+						// Execute replacement
 						let newText = fullText;
 						if (matchAll) {
 							newText = replaceAll(newText, searchText, replaceText);
@@ -1097,13 +1097,13 @@ export async function docReplaceHandler(params: {
 							newText = newText.replace(searchText, replaceText);
 						}
 
-						// 替换 Y.Text 内容
+						// Replace Y.Text content
 						textProp.delete(0, textProp.length);
 						textProp.insert(0, newText);
 					}
 				}
 			}
-			// 处理数组格式的 deltas
+			// Handle array format deltas
 			else if (Array.isArray(textProp)) {
 				let fullText = '';
 				for (const delta of textProp) {
@@ -1125,7 +1125,7 @@ export async function docReplaceHandler(params: {
 					affectedBlocks.push(blockId);
 
 					if (!params.preview) {
-						// 需要重建 deltas
+						// Need to rebuild deltas
 						let newText = fullText;
 						if (matchAll) {
 							newText = replaceAll(newText, searchText, replaceText);
@@ -1133,10 +1133,10 @@ export async function docReplaceHandler(params: {
 							newText = newText.replace(searchText, replaceText);
 						}
 
-						// 转换为 deltas 格式
+						// Convert to deltas format
 						const newDeltas: any[] = [];
 						if (newText.length > 0) {
-							// 尝试保留原始属性
+							// Try to preserve original attributes
 							const firstDelta = textProp.find(
 								(d: any) => typeof d === 'object' && d.attributes
 							);
@@ -1156,7 +1156,7 @@ export async function docReplaceHandler(params: {
 			}
 		}
 
-		// 如果不是预览模式，推送更新
+		// If not preview mode, push update
 		if (!params.preview && replaceCount > 0) {
 			await updateYDoc(socket, workspaceId, params.id, doc, prevSV);
 		}
@@ -1173,11 +1173,11 @@ export async function docReplaceHandler(params: {
 }
 
 /**
- * countOccurrences: 计算字符串中子串出现的次数
+ * countOccurrences: Count occurrences of a substring in a string
  *
- * @param str - 原始字符串
- * @param search - 要查找的子串
- * @returns 子串在字符串中出现的次数
+ * @param str - Original string
+ * @param search - Substring to find
+ * @returns Number of occurrences of the substring in the string
  */
 function countOccurrences(str: string, search: string): number {
 	if (!search) return 0;
@@ -1191,7 +1191,7 @@ function countOccurrences(str: string, search: string): number {
 }
 
 /**
- * 替换所有匹配项
+ * Replace all matches
  */
 function replaceAll(str: string, search: string, replace: string): string {
 	if (!search) return str;
@@ -1199,24 +1199,24 @@ function replaceAll(str: string, search: string, replace: string): string {
 }
 
 /**
- * docAppendHandler: 追加 Markdown 内容到文档
+ * docAppendHandler: Append Markdown content to document
  *
- * 功能描述：
- * - 将 Markdown 内容追加到现有文档的末尾
- * - 支持从文件路径读取内容或直接传入内容字符串
- * - 解析 Markdown 为 Yjs 操作，然后应用到文档
- * - 自动处理 note block 的创建（如不存在）
+ * Description:
+ * - Appends Markdown content to the end of an existing document
+ * - Supports reading content from file path or passing content string directly
+ * - Parses Markdown into Yjs operations, then applies to document
+ * - Automatically handles note block creation (if not present)
  *
- * @param params.id - 目标文档 ID（必需）
- * @param params.content - 要追加的内容，可以是 Markdown 文本或文件路径（必需）
- * @param params.workspace - 工作区 ID，默认使用配置中的工作区
- * @returns 包含追加结果的对象
+ * @param params.id - Target document ID (required)
+ * @param params.content - Content to append, can be Markdown text or file path (required)
+ * @param params.workspace - Workspace ID, defaults to configured workspace
+ * @returns Object containing append results
  *
- * 注意事项：
- * - 如果 content 是文件路径，会自动读取文件内容
- * - 空内容或仅有空白字符的内容不会执行追加
- * - 返回结果包含解析的 block 数量和实际追加的 block 数量
- * - 警告信息会在 stats.warnings 中返回
+ * Notes:
+ * - If content is a file path, file content is read automatically
+ * - Empty or whitespace-only content is not appended
+ * - Return result includes parsed block count and actual appended block count
+ * - Warnings are returned in stats.warnings
  */
 export async function docAppendHandler(params: {
 	id: string;
@@ -1230,11 +1230,11 @@ export async function docAppendHandler(params: {
 		content = fs.readFileSync(content, 'utf-8');
 	}
 
-	// 如果没有内容，直接返回
+	// If no content, return directly
 	if (!content || !content.trim()) {
 		return {
 			success: true,
-			message: '无内容追加'
+			message: 'No content to append'
 		};
 	}
 
@@ -1243,14 +1243,14 @@ export async function docAppendHandler(params: {
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// 加载文档
+		// Load document
 		const {
 			doc: doc,
 			exists: snapExists,
 			prevSV: prevSV
 		} = await fetchYDoc(socket, workspaceId, params.id);
 		if (!snapExists) {
-			throw new Error(`文档 ${params.id} 不存在`);
+			throw new Error(`Document ${params.id} does not exist`);
 		}
 
 		const blocks = doc.getMap('blocks');
@@ -1261,17 +1261,17 @@ export async function docAppendHandler(params: {
 		if (operations.length === 0) {
 			return {
 				success: true,
-				message: '无有效内容可追加'
+				message: 'No valid content to append'
 			};
 		}
 
-		// 找到或创建 note block
+		// Find or create note block
 		const noteId = ensureNoteBlock(blocks);
 		const noteBlock = findBlockById(blocks, noteId);
 		if (!noteBlock) {
-			throw new Error('无法解析 note block');
+			throw new Error('Cannot resolve note block');
 		}
-		// 使用与 createDocFromMarkdownCore 相同的处理方式
+		// Use the same processing as createDocFromMarkdownCore
 		let lastInsertedBlockId: string | undefined;
 		let appendedCount = 0;
 
@@ -1280,7 +1280,7 @@ export async function docAppendHandler(params: {
 				? { afterBlockId: lastInsertedBlockId }
 				: { parentId: noteId };
 
-			// strict: false 跳过 URL 验证
+			// strict: false skips URL validation
 			const input = markdownOperationToAppendInput(
 				operation,
 				params.id,
@@ -1303,7 +1303,7 @@ export async function docAppendHandler(params: {
 				}
 				lastInsertedBlockId = blockId;
 			} catch {
-				// 跳过验证失败的 blocks
+				// Skip blocks that fail validation
 			}
 			appendedCount++;
 		}
@@ -1311,23 +1311,23 @@ export async function docAppendHandler(params: {
 		await updateYDoc(socket, workspaceId, params.id, doc, prevSV);
 		return {
 			success: true,
-			message: `已追加 ${appendedCount} 个内容块到文档 ${params.id}`
+			message: `Appended ${appendedCount} content blocks to document ${params.id}`
 		};
 	} finally {
 	}
 }
 
 /**
- * docPublishHandler: 发布文档（公开访问）
+ * docPublishHandler: Publish document (public access)
  *
- * 功能描述：
- * - 通过 GraphQL API 将文档设置为公开访问
- * - 返回公开的文档信息
+ * Description:
+ * - Sets document as publicly accessible via GraphQL API
+ * - Returns published document info
  *
- * @param params.workspace - 工作区 ID（默认使用配置中的工作区）
- * @param params.docId - 文档 ID（必需）
- * @param params.mode - 公开模式，'Page' 或 'Edgeless'（默认 'Page'）
- * @returns 公开的文档信息
+ * @param params.workspace - Workspace ID (defaults to configured workspace)
+ * @param params.docId - Document ID (required)
+ * @param params.mode - Public mode, 'Page' or 'Edgeless' (default 'Page')
+ * @returns Published document info
  */
 export async function docPublishHandler(params: {
 	workspace?: string;
@@ -1359,15 +1359,15 @@ export async function docPublishHandler(params: {
 }
 
 /**
- * docUnpublishHandler: 取消发布文档（取消公开访问）
+ * docUnpublishHandler: Unpublish document (revoke public access)
  *
- * 功能描述：
- * - 通过 GraphQL API 撤销文档的公开访问权限
- * - 返回取消公开后的文档信息
+ * Description:
+ * - Revokes document public access via GraphQL API
+ * - Returns unpublished document info
  *
- * @param params.workspace - 工作区 ID（默认使用配置中的工作区）
- * @param params.docId - 文档 ID（必需）
- * @returns 取消公开后的文档信息
+ * @param params.workspace - Workspace ID (defaults to configured workspace)
+ * @param params.docId - Document ID (required)
+ * @returns Unpublished document info
  */
 export async function docUnpublishHandler(params: {
 	workspace?: string;

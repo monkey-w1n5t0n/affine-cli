@@ -1,23 +1,23 @@
 /**
- * 模块名称：docsUtil.ts
- * 文档工具函数模块
+ * Module: docsUtil.ts
+ * Document utility functions module
  *
- * 功能描述：
- * - 提供文档创建功能的核心实现
- * - 支持从 Markdown 创建文档
- * - 提供 Yjs block 操作的辅助函数
- * - 支持文档导出为 Markdown
+ * Description:
+ * - Provides core implementation for document creation
+ * - Supports creating documents from Markdown
+ * - Provides helper functions for Yjs block operations
+ * - Supports exporting documents to Markdown
  *
- * 导出的主要函数：
- * - createDocFromMarkdownCore: 从 Markdown 创建文档（核心函数）
- * - collectDocForMarkdown: 收集文档信息用于导出为 Markdown
+ * Main exported functions:
+ * - createDocFromMarkdownCore: Create document from Markdown (core function)
+ * - collectDocForMarkdown: Collect document info for Markdown export
  *
- * 导出的辅助函数：
- * - findBlockIdByFlavour: 查找指定 flavour 的 block ID
- * - findBlockById: 根据 ID 查找 block
- * - childIdsFrom: 获取子元素 ID 数组
- * - getStringArray: 获取字符串数组
- * - asText: 将文本内容转换为字符串
+ * Exported helper functions:
+ * - findBlockIdByFlavour: Find block ID by flavour
+ * - findBlockById: Find block by ID
+ * - childIdsFrom: Get child element ID array
+ * - getStringArray: Get string array
+ * - asText: Convert text content to string
  */
 
 import * as Y from 'yjs';
@@ -85,7 +85,7 @@ export const APPEND_BLOCK_BOOKMARK_STYLE_VALUES = [
 	'citation'
 ] as const;
 /**
- * 获取 Block 版本号
+ * Get block version number
  */
 function blockVersion(flavour: string): number {
 	switch (flavour) {
@@ -193,7 +193,7 @@ export type CreateDocResult = {
 };
 
 /**
- * 设置 Block 的系统字段
+ * Set block system fields
  */
 export function setSysFields(block: Y.Map<any>, blockId: string, flavour: string): void {
 	block.set('sys:id', blockId);
@@ -202,7 +202,7 @@ export function setSysFields(block: Y.Map<any>, blockId: string, flavour: string
 }
 
 /**
- * 创建 Y.Text
+ * Create Y.Text
  */
 export function makeText(content: string | TextDelta[]): Y.Text {
 	const yText = new Y.Text();
@@ -224,7 +224,7 @@ export function makeText(content: string | TextDelta[]): Y.Text {
 }
 
 /**
- * 确保 Note Block 存在
+ * Ensure note block exists
  */
 export function ensureNoteBlock(blocks: Y.Map<any>): string {
 	const existingNoteId = findBlockIdByFlavour(blocks, 'affine:note');
@@ -263,7 +263,7 @@ export function ensureNoteBlock(blocks: Y.Map<any>): string {
 }
 
 // /**
-//  * 确保 Surface Block 存在
+//  * Ensure surface block exists
 //  */
 // function ensureSurfaceBlock(blocks: Y.Map<any>): string {
 // 	const existingSurfaceId = findBlockIdByFlavour(blocks, 'affine:surface');
@@ -298,7 +298,7 @@ export function ensureNoteBlock(blocks: Y.Map<any>): string {
 // }
 
 /**
- * 收集后代 Block IDs
+ * Collect descendant block IDs
  */
 function collectDescendantBlockIds(blocks: Y.Map<any>, startIds: string[]): string[] {
 	const result: string[] = [];
@@ -318,7 +318,7 @@ function collectDescendantBlockIds(blocks: Y.Map<any>, startIds: string[]): stri
 }
 
 /**
- * 合并警告数组（去重）
+ * Merge warning arrays (deduplicated)
  */
 function mergeWarnings(...sources: string[][]): string[] {
 	const deduped = new Set<string>();
@@ -457,7 +457,7 @@ export function createPresetBackedDataViewBlock(
 }
 
 /**
- * 创建 Block
+ * Create block
  */
 
 export function createBlock(normalized: NormalizedAppendBlockInput): {
@@ -904,7 +904,7 @@ export function createBlock(normalized: NormalizedAppendBlockInput): {
 }
 
 /**
- * 应用 Markdown 操作到文档
+ * Apply Markdown operations to document
  */
 async function applyMarkdownOperationsInternal(parsed: {
 	workspaceId: string;
@@ -1658,7 +1658,7 @@ export function validateNormalizedAppendBlockInput(
 }
 
 /**
- * 内部创建文档函数
+ * Internal document creation function
  */
 async function createDocInternal(
 	workspaceId: string,
@@ -1675,7 +1675,7 @@ async function createDocInternal(
 		const ydoc = new Y.Doc();
 		const blocks = ydoc.getMap('blocks');
 
-		// 创建 page block
+		// Create page block
 		const pageId = generateId(12, 'page');
 		const page = new Y.Map();
 		setSysFields(page, pageId, 'affine:page');
@@ -1686,7 +1686,7 @@ async function createDocInternal(
 		page.set('sys:children', children);
 		blocks.set(pageId, page);
 
-		// 创建 surface block
+		// Create surface block
 		const surfaceId = generateId(12, 'surf');
 		const surface = new Y.Map();
 		setSysFields(surface, surfaceId, 'affine:surface');
@@ -1699,7 +1699,7 @@ async function createDocInternal(
 		blocks.set(surfaceId, surface);
 		children.push([surfaceId]);
 
-		// 创建 note block
+		// Create note block
 		const noteId = generateId(12, 'note');
 		const note = new Y.Map();
 		setSysFields(note, noteId, 'affine:note');
@@ -1717,7 +1717,7 @@ async function createDocInternal(
 		blocks.set(noteId, note);
 		children.push([noteId]);
 
-		// 如果有初始内容，添加段落
+		// If initial content exists, add paragraph
 		if (content) {
 			const paraId = generateId(12, 'para');
 			const para = new Y.Map();
@@ -1732,17 +1732,17 @@ async function createDocInternal(
 			noteChildren.push([paraId]);
 		}
 
-		// 设置 meta
+		// Set meta
 		const meta = ydoc.getMap('meta');
 		meta.set('id', docId);
 		meta.set('title', docTitle);
 		meta.set('createDate', Date.now());
 		meta.set('tags', new Y.Array());
 
-		// 推送文档更新
+		// Push document update
 		await updateYDoc(socket, workspaceId, docId, ydoc);
 
-		// 更新工作区元数据
+		// Update workspace metadata
 		const { doc: wsDoc, prevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 		const wsMeta = wsDoc.getMap('meta');
 
@@ -1767,7 +1767,7 @@ async function createDocInternal(
 }
 
 /**
- * 获取或创建 Tag 选项
+ * Get or create tag option
  */
 async function ensureTagOption(wsDoc: Y.Doc, tagName: string): Promise<string> {
 	const wsMeta = wsDoc.getMap('meta');
@@ -1775,7 +1775,7 @@ async function ensureTagOption(wsDoc: Y.Doc, tagName: string): Promise<string> {
 	const tags = properties?.get('tags') as Y.Map<any> | undefined;
 	const options = tags?.get('options') as Y.Array<any> | undefined;
 
-	// 查找现有 tag
+	// Find existing tag
 	if (options) {
 		for (let i = 0; i < options.length; i++) {
 			const opt = options.get(i);
@@ -1788,12 +1788,12 @@ async function ensureTagOption(wsDoc: Y.Doc, tagName: string): Promise<string> {
 		}
 	}
 
-	// 创建新 tag
+	// Create new tag
 	const tagId = generateId(8, 'tag');
 	const color = TAG_COLORS[(options?.length || 0) % TAG_COLORS.length];
 	const now = Date.now();
 
-	// 确保 properties.tags.options 结构存在
+	// Ensure properties.tags.options structure exists
 	let targetOptions = options;
 	if (!targetOptions) {
 		if (!properties) {
@@ -1822,7 +1822,7 @@ async function ensureTagOption(wsDoc: Y.Doc, tagName: string): Promise<string> {
 }
 
 /**
- * 添加文档到文件夹
+ * Add document to folder
  */
 async function addDocToFolder(workspaceId: string, docId: string, folderId: string): Promise<void> {
 	const socket = await createWorkspaceSocket();
@@ -1830,11 +1830,11 @@ async function addDocToFolder(workspaceId: string, docId: string, folderId: stri
 	try {
 		await joinWorkspace(socket, workspaceId);
 
-		// folders 存储在特殊文档中
+		// Folders are stored in special documents
 		const foldersDocId = `db$${workspaceId}$folders`;
 		const { doc: foldersDoc, exists: hasSnapshot } = await fetchYDoc(socket, workspaceId, foldersDocId);
 
-		// 收集现有节点
+		// Collect existing nodes
 		const nodes: any[] = [];
 		if (hasSnapshot) {
 			try {
@@ -1853,11 +1853,11 @@ async function addDocToFolder(workspaceId: string, docId: string, folderId: stri
 					});
 				}
 			} catch {
-				// 忽略遍历错误
+				// Ignore traversal errors
 			}
 		}
 
-		// 找到文件夹的子项中最大的 index
+		// Find the maximum index among folder children
 		let maxIndex = 0;
 		const folderChildren = nodes.filter((n) => n.parentId === folderId && n.type === 'doc');
 		folderChildren.forEach((n) => {
@@ -1866,7 +1866,7 @@ async function addDocToFolder(workspaceId: string, docId: string, folderId: stri
 			}
 		});
 
-		// 创建新的链接记录
+		// Create new link record
 		const linkId = generateId(12, 'link');
 		const record = foldersDoc.getMap(linkId);
 		record.set('id', linkId);
@@ -1920,7 +1920,7 @@ export async function appendBlockInternal(parsed: AppendBlockInput) {
 	}
 }
 /**
- * 从 Markdown 创建文档（核心函数）
+ * Create document from Markdown (core function)
  */
 export async function createDocFromMarkdownCore(parsed: {
 	workspaceId?: string;
@@ -1936,11 +1936,11 @@ export async function createDocFromMarkdownCore(parsed: {
 		throw new Error('workspaceId is required');
 	}
 
-	// 解析 Markdown
+	// Parse Markdown
 	const parsedMarkdown = parseMarkdownToOperations(parsed.markdown);
 	let operations = [...parsedMarkdown.operations];
 
-	// 提取标题（如果未指定，使用第一个一级标题）
+	// Extract title (if unspecified, use first h1 heading)
 	let title = (parsed.title ?? '').trim();
 	if (!title && operations.length > 0) {
 		const first = operations[0];
@@ -1950,14 +1950,14 @@ export async function createDocFromMarkdownCore(parsed: {
 		}
 	}
 
-	// 如果最终还是没有有效标题（内容为空或全是空白），使用时间格式
+	// If still no valid title (empty or whitespace-only content), use timestamp format
 	if (!title) {
 		const now = new Date();
 		const pad = (n: number) => n.toString().padStart(2, '0');
-		title = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())} 新文档`;
+		title = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())} New Document`;
 	}
 
-	// 解析标签
+	// Parse tags
 	const tagNames =
 		parsed.tags
 			?.trim()
@@ -1965,17 +1965,17 @@ export async function createDocFromMarkdownCore(parsed: {
 			.map((t) => t.trim())
 			.filter((t) => t) ?? [];
 
-	// 创建文档
+	// Create document
 	const created = await createDocInternal(workspaceId, title);
 
-	// 添加标签到文档
+	// Add tags to document
 	if (tagNames.length > 0) {
 		const socket = await createWorkspaceSocket();
 
 		try {
 			await joinWorkspace(socket, workspaceId);
 
-			// 加载工作区文档
+			// Load workspace document
 			const { doc: wsDoc, prevSV: prevSV } = await fetchYDoc(socket, workspaceId, workspaceId);
 			const wsMeta = wsDoc.getMap('meta');
 			const pages = wsMeta.get('pages') as Y.Array<Y.Map<any>> | undefined;
@@ -1984,14 +1984,14 @@ export async function createDocFromMarkdownCore(parsed: {
 				for (let i = 0; i < pages.length; i++) {
 					const entry = pages.get(i);
 					if (entry.get('id') === created.docId) {
-						// 获取或创建所有 tag 的 ID
+						// Get or create IDs for all tags
 						const tagIds: string[] = [];
 						for (const tagName of tagNames) {
 							const tagId = await ensureTagOption(wsDoc, tagName);
 							tagIds.push(tagId);
 						}
 
-						// 添加 tag IDs 到文档条目
+						// Add tag IDs to document entry
 						const docTags = entry.get('tags') as Y.Array<string> | undefined;
 						if (docTags) {
 							for (const tagId of tagIds) {
@@ -2009,13 +2009,13 @@ export async function createDocFromMarkdownCore(parsed: {
 				}
 			}
 
-			// 推送更新
+			// Push updates
 			await updateYDoc(socket, workspaceId, workspaceId, wsDoc, prevSV);
 		} finally {
 		}
 	}
 
-	// 添加文档到文件夹
+	// Add document to folder
 	if (parsed.folder) {
 		try {
 			await addDocToFolder(workspaceId, created.docId, parsed.folder);
@@ -2024,7 +2024,7 @@ export async function createDocFromMarkdownCore(parsed: {
 		}
 	}
 
-	// 应用 Markdown 操作
+	// Apply Markdown operations
 	let applied = {
 		appendedCount: 0,
 		skippedCount: 0,
@@ -2040,7 +2040,7 @@ export async function createDocFromMarkdownCore(parsed: {
 		});
 	}
 
-	// 如果指定了父文档，添加链接
+	// If parent document specified, add link
 	let linkedToParent = false;
 	if (parsed.parentDocId) {
 		try {
@@ -2056,7 +2056,7 @@ export async function createDocFromMarkdownCore(parsed: {
 		}
 	}
 
-	// 生成警告
+	// Generate warnings
 	const applyWarnings: string[] = [];
 	if (applied.skippedCount > 0) {
 		applyWarnings.push(
@@ -2086,14 +2086,14 @@ export async function createDocFromMarkdownCore(parsed: {
 }
 
 /**
- * 收集文档信息用于导出为 Markdown
- * 参考 .resources/core/docs/util.ts 中的实现
+ * Collect document info for Markdown export
+ * Reference implementation in .resources/core/docs/util.ts
  */
 
-// ==================== 工具函数 ====================
+// ==================== Utility Functions ====================
 
 // /**
-//  * 获取标签数组（从 meta 中获取）
+//  * Get tag array (from meta)
 //  */
 // function getTagArray(meta: Y.Map<any>): string[] {
 // 	const pages = meta.get('pages') as Y.Array<any> | undefined;
@@ -2110,7 +2110,7 @@ export async function createDocFromMarkdownCore(parsed: {
 // }
 
 /**
- * 将文本内容转换为字符串
+ * Convert text content to string
  */
 export function asText(value: unknown): string {
 	if (value instanceof Y.Text) return value.toString();
@@ -2119,14 +2119,14 @@ export function asText(value: unknown): string {
 }
 
 /**
- * 获取字符串或 null
+ * Get string or null
  */
 export function asStringOrNull(value: unknown): string | null {
 	return typeof value === 'string' ? value : null;
 }
 
 /**
- * 获取子元素 ID 数组
+ * Get child element ID array
  */
 export function childIdsFrom(value: unknown): string[] {
 	if (!(value instanceof Y.Array)) return [];
@@ -2148,7 +2148,7 @@ export function childIdsFrom(value: unknown): string[] {
 }
 
 /**
- * 查找指定 flavour 的 block ID
+ * Find block ID by flavour
  */
 export function findBlockIdByFlavour(blocks: Y.Map<any>, flavour: string): string | null {
 	for (const [, value] of blocks) {
@@ -2161,7 +2161,7 @@ export function findBlockIdByFlavour(blocks: Y.Map<any>, flavour: string): strin
 }
 
 /**
- * 根据 ID 查找 block
+ * Find block by ID
  */
 export function findBlockById(blocks: Y.Map<any>, blockId: string): Y.Map<any> | null {
 	const value = blocks.get(blockId);
@@ -2170,7 +2170,7 @@ export function findBlockById(blocks: Y.Map<any>, blockId: string): Y.Map<any> |
 }
 
 /**
- * 确保子元素数组存在
+ * Ensure children array exists
  */
 export function ensureChildrenArray(block: Y.Map<any>): Y.Array<any> {
 	const current = block.get('sys:children');
@@ -2181,7 +2181,7 @@ export function ensureChildrenArray(block: Y.Map<any>): Y.Array<any> {
 }
 
 /**
- * 获取工作区标签选项映射
+ * Get workspace tag options map
  */
 export function getWorkspaceTagOptionMaps(meta: Y.Map<any>): {
 	options: WorkspaceTagOption[];
@@ -2204,7 +2204,7 @@ export function getWorkspaceTagOptionMaps(meta: Y.Map<any>): {
 }
 
 /**
- * 解析标签名称
+ * Resolve tag labels
  */
 export function resolveTagLabels(
 	tagEntries: string[],
@@ -2233,7 +2233,7 @@ export function resolveTagLabels(
 }
 
 /**
- * 映射条目
+ * Map entries
  */
 function mapEntries(value: unknown): Array<[string, any]> {
 	if (value instanceof Y.Map) {
@@ -2248,7 +2248,7 @@ function mapEntries(value: unknown): Array<[string, any]> {
 }
 
 /**
- * 富文本值转字符串
+ * Rich text value to string
  */
 function richTextValueToString(value: unknown): string {
 	if (value instanceof Y.Text) return value.toString();
@@ -2269,7 +2269,7 @@ function richTextValueToString(value: unknown): string {
 }
 
 /**
- * 提取表格数据
+ * Extract table data
  */
 function extractTableData(block: Y.Map<any>): string[][] | null {
 	const rowsValue = block.get('prop:rows');
@@ -2327,7 +2327,7 @@ function extractTableData(block: Y.Map<any>): string[][] | null {
 			cells = flatCells;
 		}
 	} else {
-		// 使用 cellsValue 提取单元格数据
+		// Extract cell data using cellsValue
 		if (cellsValue instanceof Y.Map) {
 			cellsValue.forEach((cellValue: unknown, key: string) => {
 				cells.set(key, richTextValueToString(cellValue));
@@ -2339,12 +2339,12 @@ function extractTableData(block: Y.Map<any>): string[][] | null {
 	for (const { rowId } of rowEntries) {
 		const row: string[] = [];
 		for (const { columnId } of columnEntries) {
-			// 尝试多种可能的单元格 key 格式
+			// Try multiple possible cell key formats
 			const key1 = `${rowId}:${columnId}`;
 			const key2 = `${columnId}:${rowId}`;
 			let cellText = cells.get(key1) || cells.get(key2) || '';
 
-			// 如果没有找到，尝试从 block 中直接获取
+			// If not found, try reading directly from block
 			if (!cellText) {
 				const cellKey1 = `prop:cells.${rowId}:${columnId}.text`;
 				const cellKey2 = `prop:cells.${columnId}:${rowId}.text`;
@@ -2361,7 +2361,7 @@ function extractTableData(block: Y.Map<any>): string[][] | null {
 }
 
 /**
- * Markdown 可渲染块类型
+ * Markdown renderable block types
  */
 export interface MarkdownRenderableBlock {
 	id: string;
@@ -2379,8 +2379,8 @@ export interface MarkdownRenderableBlock {
 }
 
 /**
- * 收集文档信息用于导出为 Markdown
- * 参考 .resources/core/docs/util.ts 中的 collectDocForMarkdown 实现
+ * Collect document info for Markdown export
+ * Reference .resources/core/docs/util.ts collectDocForMarkdown implementation
  */
 export function collectDocForMarkdown(doc: Y.Doc) {
 	const blocks = doc.getMap('blocks') as Y.Map<any>;
@@ -2431,11 +2431,11 @@ export function collectDocForMarkdown(doc: Y.Doc) {
 }
 
 /**
- * 从文本开头提取 emoji 图标
- * 使用与 Affine 相同的正则表达式匹配规则
+ * Extract emoji icon from text beginning
+ * Uses same regex matching rules as Affine
  *
- * @param text - 输入文本
- * @returns 包含提取的 emoji 和剩余文本的对象，或如果没有 emoji 则返回 null
+ * @param text - Input text
+ * @returns Object with extracted emoji and remaining text, or null if no emoji
  */
 export function extractEmojiIcon(text: string): { emoji: string; rest: string } | null {
 	const emojiRe =
@@ -2453,39 +2453,39 @@ export function extractEmojiIcon(text: string): { emoji: string; rest: string } 
 }
 
 /**
- * 简单的 grapheme break 实现（用于处理组合 emoji）
- * 注意：这是一个简化版本，对于大多数用例应该足够
+ * Simple grapheme break implementation (for handling composed emoji)
+ * Note: This is a simplified version, sufficient for most use cases
  *
- * @param text - 输入文本
- * @param index - 起始位置
- * @returns 下一个 grapheme break 的位置
+ * @param text - Input text
+ * @param index - Starting position
+ * @returns Position of next grapheme break
  */
 function nextGraphemeBreak(text: string, index: number): number {
 	if (index >= text.length) return text.length;
 	const char = text.charCodeAt(index);
-	// 检查是否是 Emoji 修饰符序列的一部分
-	if (char >= 0x1f3fb && char <= 0x1f3ff) return index + 1; // Emoji 修饰符
+	// Check if part of emoji modifier sequence
+	if (char >= 0x1f3fb && char <= 0x1f3ff) return index + 1; // Emoji modifier
 	if (char >= 0x1f1e6 && char <= 0x1f1ff) {
-		// 旗子 emoji (regional indicator)
+		// Flag emoji (regional indicator)
 		if (index + 1 < text.length && text.charCodeAt(index + 1) >= 0x1f1e6 && text.charCodeAt(index + 1) <= 0x1f1ff) {
 			return index + 2;
 		}
 	}
-	// 检查组合标记
-	if (char >= 0x300 && char <= 0x36f) return index + 1; // 组合标记
-	if (char >= 0xfe00 && char <= 0xfe0f) return index + 1; // 变体选择符
-	// 基本返回下一个字符（对于 BMP 字符）
+	// Check combining marks
+	if (char >= 0x300 && char <= 0x36f) return index + 1; // Combining mark
+	if (char >= 0xfe00 && char <= 0xfe0f) return index + 1; // Variation selector
+	// Basic: return next character (for BMP characters)
 	if (char < 0xd800 || char > 0xdbff) return index + 1;
 	return index + 2;
 }
 
 /**
- * 设置文档的 emoji 图标
- * 通过更新 explorerIcon 数据库来实现
+ * Set document emoji icon
+ * Implemented by updating explorerIcon database
  *
- * @param workspaceId - 工作区 ID
- * @param docId - 文档 ID
- * @param emoji - emoji 字符
+ * @param workspaceId - Workspace ID
+ * @param docId - Document ID
+ * @param emoji - Emoji character
  */
 export async function setDocEmojiIcon(workspaceId: string, docId: string, emoji: string): Promise<void> {
 	const socket = await createWorkspaceSocket();
