@@ -353,6 +353,32 @@ export async function getWorkspaceDocs(workspaceId: string) {
 	}
 }
 
+export async function getWorkspaceMetaName(workspaceId: string): Promise<string | null> {
+	const socket = await createWorkspaceSocket();
+	await joinWorkspace(socket, workspaceId);
+	const { doc } = await fetchYDoc(socket, workspaceId, workspaceId);
+	const name = doc.getMap('meta').get('name');
+	return typeof name === 'string' && name.length > 0 ? name : null;
+}
+
+export async function getWorkspaceMetaNames(ids: string[]): Promise<Map<string, string>> {
+	const out = new Map<string, string>();
+	const results = await Promise.all(
+		ids.map(async (id) => {
+			try {
+				const name = await getWorkspaceMetaName(id);
+				return [id, name] as const;
+			} catch {
+				return [id, null] as const;
+			}
+		})
+	);
+	for (const [id, name] of results) {
+		if (name) out.set(id, name);
+	}
+	return out;
+}
+
 /**
  * fetchYDoc: Load document snapshot and initialize Y.Doc
  *

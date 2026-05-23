@@ -146,7 +146,7 @@ async function generateFractionalIndexingKeyBetween(
  * @returns Folder array
  */
 export async function folderAllHandler(params: { workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -192,7 +192,7 @@ export async function folderListHandler(params: {
 	folder?: boolean;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -251,7 +251,7 @@ export async function folderCreateHandler(params: {
 	index?: number;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -308,7 +308,7 @@ export async function folderDeleteHandler(params: {
 	id: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -361,7 +361,7 @@ export async function folderAddHandler(params: {
 	index?: number;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -424,7 +424,7 @@ export async function folderMoveHandler(params: {
 	target: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -492,7 +492,7 @@ export async function folderRemoveHandler(params: {
 	folder: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -552,7 +552,7 @@ export async function folderUpdateHandler(params: {
 	index?: number;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -609,7 +609,7 @@ export async function folderUpdateHandler(params: {
  * @returns Object containing deletion count
  */
 export async function folderClearHandler(params: { workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {

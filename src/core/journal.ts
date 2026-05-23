@@ -121,7 +121,7 @@ export async function journalListHandler(params: {
 	workspace?: string;
 	count?: number;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	const limit = params.count || 20;
@@ -309,7 +309,7 @@ export async function journalCreateHandler(params: {
 	workspace?: string;
 	icon?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	const journalDate = formatJournalDate(params.date);
@@ -369,7 +369,7 @@ export async function journalAppendHandler(params: {
 	content: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	let content = params.content;
@@ -481,7 +481,7 @@ export async function journalInfoHandler(params: {
 	date?: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	let targetDocId = params.id;
@@ -560,7 +560,7 @@ export async function journalUpdateHandler(params: {
 	workspace?: string;
 	icon?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	let content = params.content || '';

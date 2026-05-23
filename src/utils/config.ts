@@ -249,19 +249,25 @@ export function getBaseUrl(): string {
  *
  * Priority: parameter > env vars/config > error
  *
- * @param paramsWorkspaceId - Optional workspace ID parameter
- * @returns Workspace ID
- * @throws If workspaceId is not configured
+ * Accepts either a UUID or a workspace name; names are resolved via the
+ * on-disk cache (refreshed automatically on miss).
+ *
+ * @param paramsWorkspaceId - Optional workspace ID or name
+ * @returns Workspace UUID
+ * @throws If workspaceId is not configured, or if a name cannot be resolved
  */
-export function getWorkspaceId(paramsWorkspaceId?: string): string {
+export async function getWorkspaceId(paramsWorkspaceId?: string): Promise<string> {
 	const config = loadConfig();
-	const workspaceId = paramsWorkspaceId || config.defaultWorkspaceId;
-	if (!workspaceId) {
+	const input = paramsWorkspaceId || config.defaultWorkspaceId;
+	if (!input) {
 		throw new Error(
 			'Workspace ID not specified. Use --workspace parameter or set AFFINE_WORKSPACE_ID in config'
 		);
 	}
-	return workspaceId;
+	// Lazy-import to avoid a cycle: workspaceCache imports from wsClient,
+	// which has no dependency on config.
+	const { resolveWorkspaceIdOrName } = await import('./workspaceCache.js');
+	return resolveWorkspaceIdOrName(input);
 }
 
 /**

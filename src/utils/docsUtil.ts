@@ -1882,7 +1882,7 @@ async function addDocToFolder(workspaceId: string, docId: string, folderId: stri
 
 export async function appendBlockInternal(parsed: AppendBlockInput) {
 	const normalized = normalizeAppendBlockInput(parsed);
-	const workspaceId = getWorkspaceId(normalized.workspaceId);
+	const workspaceId = await getWorkspaceId(normalized.workspaceId);
 	if (!workspaceId) throw new Error('workspaceId is required');
 
 	const socket = await createWorkspaceSocket();

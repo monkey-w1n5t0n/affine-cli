@@ -114,7 +114,7 @@ function findCollectionIndex(array: Y.Array<any>, id: string): number {
  * @returns Collection array
  */
 export async function collectionListHandler(params: { workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -151,7 +151,7 @@ export async function collectionInfoHandler(params: {
 	id: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -203,7 +203,7 @@ export async function collectionCreateHandler(params: {
 	name: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -256,7 +256,7 @@ export async function collectionUpdateHandler(params: {
 	name: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -312,7 +312,7 @@ export async function collectionDeleteHandler(params: {
 	id: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -358,7 +358,7 @@ export async function collectionAddHandler(params: {
 	target: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -415,7 +415,7 @@ export async function collectionRemoveHandler(params: {
 	target: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {

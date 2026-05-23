@@ -19,7 +19,9 @@
  * - runCli: CLI entry function, for external use
  */
 
-import { CliModule, generateHelp, outputResult, setOutputFormat } from './utils/cliUtils.js';
+import { CliModule, generateHelp, outputResult, setOutputFormat, getOutputFormat } from './utils/cliUtils.js';
+import { loadConfig } from './utils/config.js';
+import { resolveWorkspaceName, isUuid } from './utils/workspaceCache.js';
 
 /**
  * Imported CLI modules (command mapping)
@@ -161,6 +163,28 @@ function printMainHelp() {
 
 import { CLI_VERSION } from './utils/version.js';
 
+const BANNER_SKIP_MODULES = new Set(['auth', 'workspace']);
+
+async function maybePrintWorkspaceBanner(command: string, moduleArgs: string[]): Promise<void> {
+	if (getOutputFormat() !== 'text') return;
+	if (BANNER_SKIP_MODULES.has(command)) return;
+	if (moduleArgs.includes('--workspace')) return;
+
+	try {
+		const { defaultWorkspaceId } = loadConfig();
+		if (!defaultWorkspaceId) return;
+		// If the configured value is a name, we'd resolve it before display —
+		// but resolveWorkspaceName takes a UUID. Skip the banner for non-UUID
+		// configs to avoid double-resolving (the handler will resolve via getWorkspaceId).
+		if (!isUuid(defaultWorkspaceId)) return;
+		const name = await resolveWorkspaceName(defaultWorkspaceId);
+		if (!name) return;
+		console.error(`Workspace: ${name} (${defaultWorkspaceId.slice(0, 8)})`);
+	} catch {
+		// Banner is best-effort; never block the command.
+	}
+}
+
 /**
  * runCli: CLI main entry function
  *
@@ -245,6 +269,8 @@ export async function runCli(args: string[]): Promise<boolean> {
 			console.error(`Run 'affine-cli ${command} --help' for available actions`);
 			return false;
 		}
+
+		await maybePrintWorkspaceBanner(command, moduleArgs);
 
 		// Execute action
 		try {

@@ -1409,7 +1409,7 @@ export function findRowsByFilters(
 // 	cells: Record<string, unknown>;
 // 	linkedDocId?: string;
 // }): Promise<any> {
-// 	const workspaceId = getWorkspaceId(params.workspace);
+// 	const workspaceId = await getWorkspaceId(params.workspace);
 // 	if (!workspaceId) throw new Error('workspaceId is required');
 // 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 // 	try {
@@ -1492,7 +1492,7 @@ export function findRowsByFilters(
 // 	databaseBlockId: string;
 // 	rowBlockId: string;
 // }): Promise<any> {
-// 	const workspaceId = getWorkspaceId(params.workspace);
+// 	const workspaceId = await getWorkspaceId(params.workspace);
 // 	if (!workspaceId) throw new Error('workspaceId is required');
 // 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 // 	try {
@@ -1579,7 +1579,7 @@ export async function removeDatabaseRowHandler(params: {
 	rowBlockId?: string;
 	filters?: Array<{ column: string; operator: string; value: string }>;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
@@ -1706,7 +1706,7 @@ export async function queryDatabaseHandler(params: {
 	filters?: Array<{ column: string; operator: string; value: string }>;
 	full?: boolean;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
@@ -1802,7 +1802,7 @@ export async function readDatabaseCellsHandler(params: {
 	columns?: string[];
 	filters?: Array<{ column: string; operator: string; value: string }>;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
@@ -1896,7 +1896,7 @@ export async function readDatabaseColumnsHandler(params: {
 	docId: string;
 	databaseBlockId: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
@@ -1974,7 +1974,7 @@ export async function updateDatabaseRowHandler(params: {
 	createOption?: boolean;
 	linkedDocId?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const ctx = await loadDatabaseDocContext(workspaceId, params.docId, params.databaseBlockId);
 	try {
@@ -2105,7 +2105,7 @@ export async function listDatabasesHandler(params: {
 	workspace?: string;
 	docId: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const socket = await createWorkspaceSocket();
 
@@ -2205,7 +2205,7 @@ export async function createDatabaseHandler(params: {
 	viewMode?: string;
 	data?: any;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 
 	const socket = await createWorkspaceSocket();
@@ -2747,7 +2747,7 @@ export async function deleteDatabaseHandler(params: {
 	docId: string;
 	databaseBlockId: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 	const socket = await createWorkspaceSocket();
 
@@ -2858,7 +2858,7 @@ export async function insertDatabaseHandler(params: {
 	databaseBlockId: string;
 	json: any;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) throw new Error('workspaceId is required');
 
 	// Parse JSON

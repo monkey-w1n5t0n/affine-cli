@@ -34,7 +34,7 @@ export async function listCommentsHandler(params: {
 	full?: boolean;
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspaceId);
+	const workspaceId = await getWorkspaceId(params.workspaceId);
 
 	const { docId, first, offset, after } = params;
 
@@ -141,7 +141,7 @@ export async function createCommentHandler(params: {
 	mentions?: string[];
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspaceId);
+	const workspaceId = await getWorkspaceId(params.workspaceId);
 
 	if (!params.content) {
 		throw new Error('Comment content cannot be empty');
@@ -383,7 +383,7 @@ async function addCommentMarkToDocument(
  */
 export async function updateCommentHandler(params: { id: string; content: any }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId();
+	const workspaceId = await getWorkspaceId();
 
 	// Get full comment info
 	const commentQuery = `query GetComment($workspaceId: String!, $docId: String!, $first: Int) {
@@ -525,7 +525,7 @@ export async function deleteCommentHandler(params: {
 }): Promise<any> {
 	const gql = await createGraphQLClient();
 
-	const workspaceId = params.workspaceId || getWorkspaceId();
+	const workspaceId = params.workspaceId || (await getWorkspaceId());
 	let docId: string | null = params.docId || null;
 
 	// If docId not provided, try to find the comment in workspace documents

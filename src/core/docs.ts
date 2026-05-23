@@ -57,7 +57,7 @@ export async function docAllHandler(params: {
 	workspace?: string;
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	const first = params.count || 50;
 	const offset = params.skip || 0;
@@ -144,7 +144,7 @@ export async function docInfoHandler(params: {
 	content?: 'markdown' | 'raw' | 'hidden';
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	const query = `query GetDoc($workspaceId: String!, $docId: String!) {
     workspace(id: $workspaceId) {
@@ -260,7 +260,7 @@ export async function docCreateHandler(params: {
 	icon?: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	let markdown = params.content || '';
 
@@ -304,7 +304,7 @@ export async function docCreateHandler(params: {
  * - Requires a WebSocket connection to perform deletion
  */
 export async function docDeleteHandler(params: { id: string; workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -374,7 +374,7 @@ export async function docCopyHandler(params: {
 	folder?: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	const newDocId = generateId(12, 'doc');
@@ -674,7 +674,7 @@ export async function docUpdateHandler(params: {
 	icon?: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
@@ -873,7 +873,7 @@ export async function docSearchHandler(params: {
 	matchMode?: string;
 	tag?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	const limit = params.count || 20;
@@ -1023,7 +1023,7 @@ export async function docReplaceHandler(params: {
 	matchAll?: boolean;
 	preview?: boolean;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	const searchText = params.search;
@@ -1223,7 +1223,7 @@ export async function docAppendHandler(params: {
 	content: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	let content = params.content;
 	if (content && fs.existsSync(content)) {
@@ -1334,7 +1334,7 @@ export async function docPublishHandler(params: {
 	docId: string;
 	mode?: 'Page' | 'Edgeless';
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) {
 		throw new Error(
 			'workspaceId is required. Provide it as a parameter or set AFFINE_WORKSPACE_ID in environment.'
@@ -1373,7 +1373,7 @@ export async function docUnpublishHandler(params: {
 	workspace?: string;
 	docId: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	if (!workspaceId) {
 		throw new Error(
 			'workspaceId is required. Provide it as a parameter or set AFFINE_WORKSPACE_ID in environment.'

@@ -94,7 +94,7 @@ export async function fileUploadHandler(params: {
 	workspace?: string;
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	let content: string;
 	let filename: string;
@@ -203,7 +203,7 @@ export async function fileDeleteHandler(params: {
 	workspace?: string;
 }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	const mutation = `mutation DeleteBlob($workspaceId: String!, $key: String!, $permanently: Boolean) {
     deleteBlob(workspaceId: $workspaceId, key: $key, permanently: $permanently)
@@ -236,7 +236,7 @@ export async function fileDeleteHandler(params: {
  */
 export async function fileCleanHandler(params: { workspace?: string }): Promise<any> {
 	const gql = await createGraphQLClient();
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 
 	const mutation = `mutation ReleaseDeletedBlobs($workspaceId: String!) {
     releaseDeletedBlobs(workspaceId: $workspaceId)

@@ -6,6 +6,7 @@
 
 import { getWorkspaceId } from '../utils/config.js';
 import { createWorkspaceSocket, joinWorkspace, fetchYDoc, updateYDoc } from '../utils/wsClient.js';
+import { resolveWorkspaceName } from '../utils/workspaceCache.js';
 import { TAG_COLORS } from './constants.js';
 import * as Y from 'yjs';
 import { generateId } from '../utils/misc.js';
@@ -186,14 +187,15 @@ export function getStringArray(value: unknown): string[] {
  * - Each tag includes name, document count, and color info
  */
 export async function tagsListHandler(params: { workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 
 	try {
 		await joinWorkspace(socket, workspaceId);
 		const { doc: wsDoc, exists: snapshotExists } = await fetchYDoc(socket, workspaceId, workspaceId);
+		const workspaceName = await resolveWorkspaceName(workspaceId);
 		if (!snapshotExists) {
-			return { workspaceId, totalTags: 0, tags: [] };
+			return { workspaceId, workspaceName, totalTags: 0, tags: [] };
 		}
 		const meta = wsDoc.getMap('meta');
 		const pages = getWorkspacePageEntries(meta);
@@ -233,7 +235,8 @@ export async function tagsListHandler(params: { workspace?: string }): Promise<a
 			});
 
 		return {
-			// workspaceId,
+			workspaceId,
+			workspaceName,
 			total: tags.length,
 			tags
 		};
@@ -264,7 +267,7 @@ export async function tagsCreateHandler(params: {
 	color?: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 	const name = normalizeTag(params.name);
 
@@ -334,7 +337,7 @@ export async function tagsDocAddHandler(params: {
 	tag: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 	const tag = normalizeTag(params.tag);
 
@@ -415,7 +418,7 @@ export async function tagsDocRemoveHandler(params: {
 	tag: string;
 	workspace?: string;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 	const tag = normalizeTag(params.tag);
 
@@ -477,7 +480,7 @@ export async function tagsDocRemoveHandler(params: {
  * - Throws if tag doesn't exist
  */
 export async function tagsDeleteHandler(params: { tag: string; workspace?: string }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 	const tag = normalizeTag(params.tag);
 
@@ -542,7 +545,7 @@ export async function tagsDocListHandler(params: {
 	workspace?: string;
 	ignoreCase?: boolean;
 }): Promise<any> {
-	const workspaceId = getWorkspaceId(params.workspace);
+	const workspaceId = await getWorkspaceId(params.workspace);
 	const socket = await createWorkspaceSocket();
 	const tag = normalizeTag(params.tag);
 	const ignoreCase = params.ignoreCase ?? true;
@@ -550,8 +553,9 @@ export async function tagsDocListHandler(params: {
 	try {
 		await joinWorkspace(socket, workspaceId);
 		const { doc: wsDoc, exists: snapshotExists } = await fetchYDoc(socket, workspaceId, workspaceId);
+		const workspaceName = await resolveWorkspaceName(workspaceId);
 		if (!snapshotExists) {
-			return { workspaceId, tag, ignoreCase, totalDocs: 0, docs: [] };
+			return { workspaceId, workspaceName, tag, ignoreCase, totalDocs: 0, docs: [] };
 		}
 		const meta = wsDoc.getMap('meta');
 		const pages = getWorkspacePageEntries(meta);
@@ -562,7 +566,7 @@ export async function tagsDocListHandler(params: {
 		);
 
 		if (!tagOption) {
-			return { workspaceId, tag, ignoreCase, totalDocs: 0, docs: [] };
+			return { workspaceId, workspaceName, tag, ignoreCase, totalDocs: 0, docs: [] };
 		}
 
 		const docs = pages
@@ -583,8 +587,10 @@ export async function tagsDocListHandler(params: {
 			});
 
 		return {
-			// tag,
-			// ignoreCase,
+			workspaceId,
+			workspaceName,
+			tag,
+			ignoreCase,
 			total: docs.length,
 			docs
 		};
